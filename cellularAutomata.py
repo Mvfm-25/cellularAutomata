@@ -64,13 +64,20 @@ class mapa:
     # Faz o que diz fazer. 
     # Agora com cores!
     def imprimeMapa(self):
+        # Contagem de de céulas Caminhos ou Paredes. 
+        contParedes = 0
+        contCaminhos = 0
         for i in range(self.altura) :
             for j in range(self.largura) :
                 if(self.matriz[i][j].estado == 1):
                     color.cprint(self.matriz[i][j].estado, "magenta", end=" ")
+                    contParedes += 1
                 else:
                     color.cprint(self.matriz[i][j].estado, "white", end=" ")
+                    contCaminhos += 1
             print()
+        print(f"Número de Paredes : {contParedes} | Número de Caminhos : {contCaminhos}")
+        print()
     
     # Função para alterar estado das células contidas no mapa.
     # Tendo mais que 5 vizinhos imediatos, a célula 'morre', vira caminho livre.
@@ -87,14 +94,16 @@ class mapa:
         # 2) Depois aplica as mutações com base nos contadores já calculados
         for i in range(self.altura):
             for j in range(self.largura):
-                if(self.matriz[i][j].vizinhos >= 4):
-                    mudancas += 1
-                    self.matriz[i][j].estado = 0
+                if(self.matriz[i][j].vizinhos > 2):
+                    # Só conta se realmente muda
+                    if(self.matriz[i][j].estado == 1):  
+                        self.matriz[i][j].estado = 0
+                        mudancas += 1
 
         print(f"Número de mudanças nessa geração : {mudancas}")
 
 
-mapa = mapa(5, 5)
+mapa = mapa(3, 3)
 mapa.geraMapa()
 print("Estado inicial : ")
 mapa.imprimeMapa()
