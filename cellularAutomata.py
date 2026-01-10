@@ -18,6 +18,7 @@ class celula:
 
     # Atualiza o estado da célula.
     def atualizaEstado(self, novoEstado):
+        print(f"Célula atualizada : ({self.x}, {self.y})")
         print(f"Atualizando estado de {self.estado} para {novoEstado}")
         self.estado = novoEstado
 
@@ -42,9 +43,9 @@ class celula:
                     if(matriz[nx][ny].estado == 1):
                         self.vizinhos += 1
 
-        print(f"Célula analisada : ({self.x}, {self.y})")
-        print(f"Número de vizinhos encontrados : {self.vizinhos}")
-        print()
+        #print(f"Célula analisada : ({self.x}, {self.y})")
+        #print(f"Número de vizinhos encontrados : {self.vizinhos}")
+        #print()
         return self.vizinhos
 
 # Classe principal para geração do mapa.
@@ -80,8 +81,8 @@ class mapa:
         print()
     
     # Função para alterar estado das células contidas no mapa.
-    # Tendo mais que 5 vizinhos imediatos, a célula 'morre', vira caminho livre.
-    def muta(self):
+    # Tendo mais que 4 vizinhos imediatos, a célula 'morre', vira caminho livre.
+    def atualizaCelulas(self):
         # Contador de mundanças nessa geração.
         # Também se reinicia a cada chamada como contagem de vizinhos.
         mudancas = 0
@@ -91,25 +92,38 @@ class mapa:
             for j in range(self.largura):
                 self.matriz[i][j].calculaVizinhos(self.matriz)
 
-        # 2) Depois aplica as mutações com base nos contadores já calculados
+        # 2) Depois aplica as mudanças e mutações com base nos contadores já calculados
         for i in range(self.altura):
             for j in range(self.largura):
-                if(self.matriz[i][j].vizinhos > 2):
-                    # Só conta se realmente muda
+                if(self.matriz[i][j].vizinhos > 4):
+                    # Só conta se realmente muda.
                     if(self.matriz[i][j].estado == 1):  
-                        self.matriz[i][j].estado = 0
+                        self.matriz[i][j].atualizaEstado(0)
+                        mudancas += 1
+                    if(self.mutaCelula(self.matriz[i][j])):
                         mudancas += 1
 
         print(f"Número de mudanças nessa geração : {mudancas}")
 
+    # Trazendo aleatoridade pra criação das cavernas.
+    def mutaCelula(self, celula):
+        dado = random.randint(0,100)
+        # 25% de chance de mudar o estado.
+        # Equivalente de jogar um D100, 1/4 de chance.
+        if(dado >= 75):
+            celula.atualizaEstado(1) if celula.estado == 0 else celula.atualizaEstado(0)
+            print(f"Mutação aleatória ocorrida na célula ({celula.x}, {celula.y})!")
+            return True
+        else :
+            return False
 
-mapa = mapa(3, 3)
+mapa = mapa(10, 10)
 mapa.geraMapa()
 print("Estado inicial : ")
 mapa.imprimeMapa()
 
-for i in range(5):
+for i in range(10):
     print(f"Geração : {i}")
-    mapa.muta()
+    mapa.atualizaCelulas()
     mapa.imprimeMapa()
 
