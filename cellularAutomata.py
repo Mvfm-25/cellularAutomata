@@ -79,14 +79,18 @@ class mapa:
         # Também se reinicia a cada chamada como contagem de vizinhos.
         mudancas = 0
 
+        # 1) Primeiro calcula vizinhos para todas as células sem alterar estados
         for i in range(self.altura):
             for j in range(self.largura):
-                # Primeiro calcula os vizinhos de cada célula para então mutar.
                 self.matriz[i][j].calculaVizinhos(self.matriz)
 
-                if(self.matriz[i][j].vizinhos >= 5):
+        # 2) Depois aplica as mutações com base nos contadores já calculados
+        for i in range(self.altura):
+            for j in range(self.largura):
+                if(self.matriz[i][j].vizinhos >= 4):
                     mudancas += 1
                     self.matriz[i][j].estado = 0
+
         print(f"Número de mudanças nessa geração : {mudancas}")
 
 
