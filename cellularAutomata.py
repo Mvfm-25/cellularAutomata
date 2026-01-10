@@ -16,16 +16,35 @@ class celula:
         self.x = x
         self.y = y
 
+    # Atualiza o estado da célula.
+    def atualizaEstado(self, novoEstado):
+        print(f"Atualizando estado de {self.estado} para {novoEstado}")
+        self.estado = novoEstado
+
     # Determina o número de vizinhos imediatos paredes.
     # Vai ajudar depois para geração.
-    def calculaVizinhos(self, matriz, altura, largura):
-        self.vizinhos = 0  # Reseta o contador
-        for(i, j) in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
-            ni, nj = self.x + i, self.y + j
-            # Verifica se está dentro dos limites
-            if 0 <= ni < altura and 0 <= nj < largura:
-                if matriz[ni][nj].estado == 1:
-                    self.vizinhos += 1
+    def calculaVizinhos(self, matriz):
+        # Reseta contador a cada chamada.
+        self.vizinhos = 0
+
+        # Verifica os 8 vizinhos imediatos.
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                # Ignora a própria célula.
+                if(dx == 0 and dy == 0):
+                    continue
+
+                nx = self.x + dx
+                ny = self.y + dy
+
+                # Verifica se o vizinho está dentro dos limites da matriz.
+                if(0 <= nx < len(matriz) and 0 <= ny < len(matriz[0])):
+                    if(matriz[nx][ny].estado == 1):
+                        self.vizinhos += 1
+
+        print(f"Célula analisada : ({self.x}, {self.y})")
+        print(f"Número de vizinhos encontrados : {self.vizinhos}")
+        print()
         return self.vizinhos
 
 # Classe principal para geração do mapa.
@@ -56,16 +75,22 @@ class mapa:
     # Função para alterar estado das células contidas no mapa.
     # Tendo mais que 5 vizinhos imediatos, a célula 'morre', vira caminho livre.
     def muta(self):
+        # Contador de mundanças nessa geração.
+        # Também se reinicia a cada chamada como contagem de vizinhos.
+        mudancas = 0
+
         for i in range(self.altura):
             for j in range(self.largura):
                 # Primeiro calcula os vizinhos de cada célula para então mutar.
-                self.matriz[i][j].calculaVizinhos(self.matriz, self.altura, self.largura)
+                self.matriz[i][j].calculaVizinhos(self.matriz)
 
                 if(self.matriz[i][j].vizinhos >= 5):
+                    mudancas += 1
                     self.matriz[i][j].estado = 0
+        print(f"Número de mudanças nessa geração : {mudancas}")
 
 
-mapa = mapa(25, 25)
+mapa = mapa(5, 5)
 mapa.geraMapa()
 print("Estado inicial : ")
 mapa.imprimeMapa()
