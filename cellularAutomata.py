@@ -1,7 +1,7 @@
 # Brincando com geração de cavernas usando cellular automata.
 # [mvfm]
 #
-# Criação : 09/01/2026  ||  Última modificação : 09/01/2026
+# Criação : 09/01/2026  ||  Última modificação : 10/01/2026
 
 import numpy as np
 import random
