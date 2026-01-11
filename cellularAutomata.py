@@ -6,6 +6,7 @@
 import numpy as np
 import random
 import termcolor as color
+import time
 
 # Estrutura básica de uma célula.
 # Toda célula inicia com estado de 'parede' ('1'), '0' representa um caminho livre.
@@ -87,6 +88,9 @@ class mapa:
         # Também se reinicia a cada chamada como contagem de vizinhos.
         mudancas = 0
 
+        # Contador do tempo de início da atualizção.
+        comeco = time.perf_counter()
+
         # 1) Primeiro calcula vizinhos para todas as células sem alterar estados
         for i in range(self.altura):
             for j in range(self.largura):
@@ -103,6 +107,9 @@ class mapa:
                     if(self.mutaCelula(self.matriz[i][j])):
                         mudancas += 1
 
+        # Contador do tempo de fim da atualização.
+        fim = time.perf_counter()
+        print(f"Mapa atualizado em : {fim - comeco:.4f} segundos")
         print(f"Número de mudanças nessa geração : {mudancas}")
 
     # Trazendo aleatoridade pra criação das cavernas.
@@ -122,8 +129,11 @@ mapa.geraMapa()
 print("Estado inicial : ")
 mapa.imprimeMapa()
 
+comecoSim = time.perf_counter()
 for i in range(10):
     print(f"Geração : {i}")
     mapa.atualizaCelulas()
     mapa.imprimeMapa()
 
+fimSim = time.perf_counter()
+print(f"Simulação finalizada em : {fimSim - comecoSim:.4f} segundos")
