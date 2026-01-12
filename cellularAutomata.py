@@ -1,12 +1,13 @@
 # Brincando com geração de cavernas usando cellular automata.
 # [mvfm]
 #
-# Criação : 09/01/2026  ||  Última modificação : 10/01/2026
+# Criação : 09/01/2026  ||  Última modificação : 12/01/2026
 
 import numpy as np
 import random
 import termcolor as color
 import time
+from datetime import datetime
 
 # Estrutura básica de uma célula.
 # Toda célula inicia com estado de 'parede' ('1'), '0' representa um caminho livre.
@@ -72,10 +73,10 @@ class mapa:
         for i in range(self.altura) :
             for j in range(self.largura) :
                 if(self.matriz[i][j].estado == 1):
-                    color.cprint(self.matriz[i][j].estado, "magenta", end=" ")
+                    color.cprint("1", "magenta", end=" ")
                     contParedes += 1
                 else:
-                    color.cprint(self.matriz[i][j].estado, "white", end=" ")
+                    color.cprint("0", "white", end=" ")
                     contCaminhos += 1
             print()
         print(f"Número de Paredes : {contParedes} | Número de Caminhos : {contCaminhos}")
@@ -123,8 +124,41 @@ class mapa:
             return True
         else :
             return False
+        
+    # Escreve o estado final do mapa em um arquivo de texto.
+    def exportaEstadoFinal(self):
+        ultimo = self.verificaUltimoExportado()
+        with open("masmorras\masmorra" + str(ultimo) + ".txt", 'w', encoding="utf-8") as f:
+            print(f"{self.geraNome()}!", file=f)
+            print(f"Data de criação : {datetime.today().strftime('%d/%m/%Y')}\n", file=f)
+            for i in range(self.altura):
+                for j in range(self.largura):
+                    f.write(f"{self.matriz[i][j].estado} ")
+                f.write("\n")
+        print(f"Estado final exportado para o arquivo : masmorras\masmorra{ultimo}.txt")
+        # Atualiza contador de arquivos exportados.
+        with open("ultimo_exportado.txt", 'w', encoding="utf-8") as f:
+            f.write(str(ultimo + 1))
 
-mapa = mapa(10, 10)
+    # Agora ficando mais parecido com Rogue.
+    # Gerador automático de nomes pras masmorras criadas.
+    def geraNome(self):
+        p = ["Masmorra", "Caverna", "Abismo", "Calabouço", "Covil", "Tumba"]
+        m = ["Sombria", "Sombrio", "Perdida", "Perdido", "Esquecida", "Esquecido", "Maldita", "Maldito"]
+        f = ["Dos Mortos", "Dos Condenados", "Das Almas", "Do Senhor", "Da Desgraça", "Da Perdição"]
+
+        nome = random.choice(p) + " " + random.choice(m) + " " + random.choice(f)
+        return nome
+    
+    # Maneira mais chata que achei pra fazer isso, mas funciona pelo menos.
+    # Variáveis globais não me ajudaram.
+    def verificaUltimoExportado(self):
+        with open("ultimo_exportado.txt", 'r', encoding="utf-8") as f:
+            ultimo = f.read()
+            print("Último mapa exportado : " + ultimo)
+            return int(ultimo)
+
+mapa = mapa(20, 20)
 mapa.geraMapa()
 print("Estado inicial : ")
 mapa.imprimeMapa()
@@ -137,3 +171,6 @@ for i in range(10):
 
 fimSim = time.perf_counter()
 print(f"Simulação finalizada em : {fimSim - comecoSim:.4f} segundos")
+
+# Ecrevendo mapa final em arquivo.
+mapa.exportaEstadoFinal()
