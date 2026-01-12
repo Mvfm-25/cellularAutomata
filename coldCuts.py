@@ -7,12 +7,15 @@
 from cellularAutomata import mapa as mapaCA
 import cellularAutomata as ca
 import subprocess
+import os
 
 # O Rogue!
 class jogador:
 
     def __init__(self):
-        super().__init__() 
+        self.x = 0
+        self.y = 0
+
         self.nome = ""
         self.sprite = "@"
         self.classe = ""
@@ -26,7 +29,6 @@ class jogador:
         self.criaPersonagem()
 
     # Função para criar personagem. Nada muito complicado ainda.
-    # Talvez adicionar coisas como 'espaço do inventário', 'velocidade' & 'habilidades' depois.
     def criaPersonagem(self):
         print("--  Criação de Personagem --")
         self.nome = input("Qual o seu nome?\n")
@@ -56,59 +58,119 @@ class jogador:
                 self.armadura = 5
 
         print(f"Personagem criado com sucesso! \nNome : {self.nome} \nClasse : {self.classe} \nHP : {self.hp} \nAtaque : {self.ataque} \nArmadura : {self.armadura}\n")
-        
+        input("Pressione ENTER para começar...")
+
+    # Função para encontrar uma posição inicial válida (caminho livre)
+    def encontraPosicaoInicial(self, mapa):
+        for i in range(mapa.altura):
+            for j in range(mapa.largura):
+                if mapa.matriz[i][j].estado == 0:
+                    self.x = i
+                    self.y = j
+                    return True
+        return False
 
     # Só pra certificar se o jogador vai bater na parede ou não.
     def checaColisao(self, mapa, novoX, novoY):
-        if(mapa.matriz[novoX][novoY].estado == 1):
+        # Verifica limites do mapa
+        if novoX < 0 or novoX >= mapa.altura or novoY < 0 or novoY >= mapa.largura:
+            print("Limite do mapa!")
+            return False
+        
+        if mapa.matriz[novoX][novoY].estado == 1:
             print("Caminho bloqueado!")
             return False
-        else : 
-            return True
+        return True
 
     # Função pra movimentar o jogador.
-    # Talvez usá-la pra npc's também.
     def movimenta(self, mapa, direcao):
+        # Guarda posição antiga
+        velhoX, velhoY = self.x, self.y
+        novoX, novoY = self.x, self.y
+
         match direcao:
             case "7":
-                if(self.checaColisao(mapa, self.x - 1, self.y - 1)):
-                    self.x -= 1
-                    self.y -= 1
+                novoX, novoY = self.x - 1, self.y - 1
             case "8":
-                if(self.checaColisao(mapa, self.x, self.y - 1)):
-                    self.y -= 1
+                novoX, novoY = self.x - 1, self.y
             case "9":
-                if(self.checaColisao(mapa, self.x + 1, self.y - 1)):
-                    self.x += 1
-                    self.y -= 1
+                novoX, novoY = self.x - 1, self.y + 1
             case "4":
-                if(self.checaColisao(mapa, self.x - 1, self.y)):
-                    self.x -= 1
+                novoX, novoY = self.x, self.y - 1
             case "6":
-                if(self.checaColisao(mapa, self.x + 1, self.y)):
-                    self.x += 1
+                novoX, novoY = self.x, self.y + 1
             case "1":
-                if(self.checaColisao(mapa, self.x - 1, self.y + 1)):
-                    self.x -= 1
-                    self.y += 1
+                novoX, novoY = self.x + 1, self.y - 1
             case "2":
-                if(self.checaColisao(mapa, self.x, self.y + 1)):
-                    self.y += 1
+                novoX, novoY = self.x + 1, self.y
             case "3":
-                if(self.checaColisao(mapa, self.x + 1, self.y + 1)):
-                    self.x += 1
-                    self.y += 1
+                novoX, novoY = self.x + 1, self.y + 1
+            case _:
+                return False
 
-# O jogo!
-mapa = mapaCA()
-mapa.leMapaExportado("masmorras/masmorra0.txt")
+        # Verifica colisão antes de mover
+        if self.checaColisao(mapa, novoX, novoY):
+            # Restaura célula antiga
+            mapa.matriz[velhoX][velhoY].estado = 0
+            # Move para nova posição
+            self.x, self.y = novoX, novoY
+            mapa.matriz[self.x][self.y].estado = self.sprite
+            return True
+        return False
 
-player = jogador()
+# Função para limpar a tela (funciona em Windows e Linux)
+def limpaTela():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
-if(input != "q"):
-    # Limpa tela
-    subprocess.run("clear", shell=True)
-    print(f"Jogador : {player.nome}  |  Classe : {player.classe}  |  HP : {player.hp}  |  Ataque : {player.ataque}  |  Armadura : {player.armadura}\n")
+# Função para desenhar a interface do jogo
+def desenhaInterface(player, mapa):
+    limpaTela()
+    print("=" * 50)
+    print(f"Jogador: {player.nome} | Classe: {player.classe}")
+    print(f"HP: {player.hp} | Ataque: {player.ataque} | Armadura: {player.armadura}")
+    print(f"Posição: ({player.x}, {player.y})")
+    print("=" * 50)
+    print()
     mapa.imprimeMapa()
+    print()
+    print("Controles: 7-8-9 (↖↑↗) | 4-6 (←→) | 1-2-3 (↙↓↘) | 'q' para sair")
+    print("-" * 50)
 
+# GAME LOOP PRINCIPAL
+def main():
+    # Carrega o mapa
+    mapa = mapaCA()
+    mapa.leMapaExportado("masmorras/masmorra0.txt")
+    
+    # Cria o jogador
+    player = jogador()
+    
+    # Encontra posição inicial
+    if not player.encontraPosicaoInicial(mapa):
+        print("Erro: Não foi possível encontrar uma posição inicial válida!")
+        return
+    
+    # Coloca o jogador no mapa
+    mapa.matriz[player.x][player.y].estado = player.sprite
+    
+    # Loop principal do jogo
+    jogando = True
+    while jogando:
+        # Desenha a interface
+        desenhaInterface(player, mapa)
+        
+        # Recebe input do jogador
+        comando = input("Seu comando: ").strip()
+        
+        # Processa comando
+        if comando.lower() == 'q':
+            print("Encerrando o jogo...")
+            jogando = False
+        elif comando in ['1', '2', '3', '4', '6', '7', '8', '9']:
+            player.movimenta(mapa, comando)
+        else:
+            print("Comando inválido!")
+            input("Pressione ENTER para continuar...")
 
+if __name__ == "__main__":
+    main()
