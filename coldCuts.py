@@ -4,6 +4,7 @@
 #
 # Criado : 12/01/2026  ||  Última modificação : 12/01/2026
 
+from cellularAutomata import mapa as mapaCA
 import cellularAutomata as ca
 import subprocess
 
@@ -11,7 +12,7 @@ import subprocess
 class jogador:
 
     def __init__(self):
-        ca.celula.__init__(self, 0, 0)
+        super().__init__() 
         self.nome = ""
         self.sprite = "@"
         self.classe = ""
@@ -99,8 +100,8 @@ class jogador:
                     self.y += 1
 
 # O jogo!
-mapa = ca.mapa(20, 20)
-mapa.leMapaExportado("masmorras\masmorra0.txt")
+mapa = mapaCA()
+mapa.leMapaExportado("masmorras/masmorra0.txt")
 
 player = jogador()
 

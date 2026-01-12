@@ -53,10 +53,16 @@ class celula:
 # Classe principal para geração do mapa.
 # Puro barulho ainda.
 class mapa:
-    def __init__(self, largura, altura):
-        self.largura = largura
-        self.altura = altura
+    def __init__(self):
+        self.largura = 0
+        self.altura = 0
         self.matriz = []
+
+    # Modularizando setters.
+    def setAltura(self, altura):
+        self.altura = altura
+    def setLargura(self, largura):
+        self.largura = largura
 
     # For simpleszinho, nada complicado ainda
     # Imagino receber puro barulho por enquanto. Só quero ver se consigo.
@@ -161,17 +167,22 @@ class mapa:
     # Torna 'jogável' o mapa escrito em arquivo.
     def leMapaExportado(self, caminhoArquivo):
         with open(caminhoArquivo, 'r', encoding="utf-8") as f:
+            print(f"Lendo mapa do arquivo : {caminhoArquivo}")
             linhas = f.readlines()
-            # Ignora as duas primeiras linhas (título e data).
-            linhas = linhas[2:]
+            # Ignora as três primeiras linhas (título, data & espaço vazio).
+            linhas = linhas[3:]
+            # Assumindo sempre mapas quadrados por enquanto.
             self.altura = len(linhas)
-            self.largura = len(linhas[0].split())
+            self.largura = len(linhas)
+            print(f"Dimensões : {self.largura}x{self.altura}")
             self.matriz = [[celula(i, j) for j in range(self.largura)] for i in range(self.altura)]
             for i in range(self.altura):
                 valores = linhas[i].strip().split()
                 for j in range(self.largura):
                     self.matriz[i][j].estado = int(valores[j])
         print(f"Mapa importado do arquivo : {caminhoArquivo}")
+
+        return self
 
         
 
