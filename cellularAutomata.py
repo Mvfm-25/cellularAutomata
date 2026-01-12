@@ -157,20 +157,37 @@ class mapa:
             ultimo = f.read()
             print("Último mapa exportado : " + ultimo)
             return int(ultimo)
+    
+    # Torna 'jogável' o mapa escrito em arquivo.
+    def leMapaExportado(self, caminhoArquivo):
+        with open(caminhoArquivo, 'r', encoding="utf-8") as f:
+            linhas = f.readlines()
+            # Ignora as duas primeiras linhas (título e data).
+            linhas = linhas[2:]
+            self.altura = len(linhas)
+            self.largura = len(linhas[0].split())
+            self.matriz = [[celula(i, j) for j in range(self.largura)] for i in range(self.altura)]
+            for i in range(self.altura):
+                valores = linhas[i].strip().split()
+                for j in range(self.largura):
+                    self.matriz[i][j].estado = int(valores[j])
+        print(f"Mapa importado do arquivo : {caminhoArquivo}")
 
-mapa = mapa(20, 20)
-mapa.geraMapa()
-print("Estado inicial : ")
-mapa.imprimeMapa()
+        
 
-comecoSim = time.perf_counter()
-for i in range(10):
-    print(f"Geração : {i}")
-    mapa.atualizaCelulas()
-    mapa.imprimeMapa()
+#mapa = mapa(20, 20)
+#apa.geraMapa()
+#print("Estado inicial : ")
+#mapa.imprimeMapa()
 
-fimSim = time.perf_counter()
-print(f"Simulação finalizada em : {fimSim - comecoSim:.4f} segundos")
+#comecoSim = time.perf_counter()
+#for i in range(10):
+#    print(f"Geração : {i}")
+#    mapa.atualizaCelulas()
+#    mapa.imprimeMapa()
+
+#fimSim = time.perf_counter()
+#print(f"Simulação finalizada em : {fimSim - comecoSim:.4f} segundos")
 
 # Ecrevendo mapa final em arquivo.
-mapa.exportaEstadoFinal()
+#mapa.exportaEstadoFinal()
