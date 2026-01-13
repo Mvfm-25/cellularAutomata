@@ -6,9 +6,11 @@
 
 from cellularAutomata import mapa as mapaCA
 import cellularAutomata as ca
-import subprocess
+import pygame
+import time
 import os
 import random
+import threading
 
 # Lista de sprites de itens disponíveis
 ITENS_DISPONIVEIS = [
@@ -381,10 +383,54 @@ def processaComando(comando, player, mapa, jogando):
         else:
             print("Comando inválido!")
             input("Pressione ENTER para continuar...")
+        
+        return jogando
+
+# Classe para gerenciar a música de fundo
+class GerenciadorMusica:
+    def __init__(self):
+        pygame.mixer.init()
+        self.tocando = False
+        self.thread = None
+    
+    def tocaMusica(self, caminhoMusica, loops=-1):
+        """Toca música em uma thread separada, não bloqueando o game loop"""
+        if self.tocando:
+            self.paraMusica()
+        
+        self.tocando = True
+        self.thread = threading.Thread(target=self._tocaEmBackground, args=(caminhoMusica, loops))
+        self.thread.daemon = True  # Thread daemon encerra com o programa
+        self.thread.start()
+    
+    def _tocaEmBackground(self, caminhoMusica, loops):
+        """Função interna que roda na thread separada"""
+        try:
+            pygame.mixer.music.load(caminhoMusica)
+            pygame.mixer.music.play(loops)
+            
+            # Aguarda enquanto música toca
+            while pygame.mixer.music.get_busy() and self.tocando:
+                time.sleep(0.1)
+        except Exception as e:
+            print(f"Erro ao tocar música: {e}")
+        finally:
+            self.tocando = False
+    
+    def paraMusica(self):
+        """Para a música"""
+        self.tocando = False
+        pygame.mixer.music.stop()
+        
 
 
 # GAME LOOP PRINCIPAL
 def main():
+
+    # Cria instância do gerenciador de música
+    musica = GerenciadorMusica()
+    musica.tocaMusica("musica/coldCuts - dungeon1.ogg", loops=-1)
+
     # Cria instância do mapa.
     mapa = mapaCA()
 
@@ -429,7 +475,7 @@ def main():
         
         # Recebe input do jogador
         comando = input("Seu comando: ").strip()
-        processaComando(comando, player, mapa, jogando)
+        jogando = processaComando(comando, player, mapa, jogando)
 
 if __name__ == "__main__":
     main()
