@@ -56,6 +56,7 @@ class mapa:
     def __init__(self):
         self.largura = 0
         self.altura = 0
+        self.titulo = ""
         self.matriz = []
 
     # Modularizando setters.
@@ -64,10 +65,14 @@ class mapa:
     def setLargura(self, largura):
         self.largura = largura
 
-    # For simpleszinho, nada complicado ainda
-    # Imagino receber puro barulho por enquanto. Só quero ver se consigo.
-    def geraMapa(self):
+    # Criação de mapas.
+    # Agora recebe quantidade de gerações para maior controle e não ter que depender do main, assim como sua exportação final.
+    def geraMapa(self, geracoes):
         self.matriz = [[celula(i, j) for j in range(self.largura)] for i in range(self.altura)]
+        for g in range(geracoes):
+            print(f"Geração {g + 1} de {geracoes}")
+            self.atualizaCelulas()
+        self.exportaEstadoFinal()
         return self.matriz
 
     # Faz o que diz fazer. 
@@ -171,7 +176,8 @@ class mapa:
         with open(caminhoArquivo, 'r', encoding="utf-8") as f:
             print(f"Lendo mapa do arquivo : {caminhoArquivo}")
             linhas = f.readlines()
-            # Ignora as três primeiras linhas (título, data & espaço vazio).
+            #self.titulo = linhas[0].strip()
+            # Ignora as duas outras linhas (data & espaço vazio).
             linhas = linhas[3:]
             # Assumindo sempre mapas quadrados por enquanto.
             self.altura = len(linhas)

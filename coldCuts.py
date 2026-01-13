@@ -60,13 +60,15 @@ class jogador:
         print(f"Personagem criado com sucesso! \nNome : {self.nome} \nClasse : {self.classe} \nHP : {self.hp} \nAtaque : {self.ataque} \nArmadura : {self.armadura}\n")
         input("Pressione ENTER para começar...")
 
-    # Função para encontrar uma posição inicial válida (caminho livre)
+    # Função para encontrar uma posição inicial válida (caminho livre) & com não muitos vizinhos.
+    # Não queremos prender o jogador em um beco sem saída.
     def encontraPosicaoInicial(self, mapa):
         for i in range(mapa.altura):
             for j in range(mapa.largura):
                 if mapa.matriz[i][j].estado == 0:
-                    self.x = i
-                    self.y = j
+                    if(mapa.matriz[i][j].calculaVizinhos(mapa.matriz) < 3 ):
+                        self.x = i
+                        self.y = j
                     return True
         return False
 
@@ -131,6 +133,7 @@ def desenhaInterface(player, mapa):
     print(f"Posição: ({player.x}, {player.y})")
     print("=" * 50)
     print()
+    #print(mapa.titulo)
     mapa.imprimeMapa()
     print()
     print("Controles: 7-8-9 (↖↑↗) | 4-6 (←→) | 1-2-3 (↙↓↘) | 'q' para sair")
@@ -138,9 +141,23 @@ def desenhaInterface(player, mapa):
 
 # GAME LOOP PRINCIPAL
 def main():
-    # Carrega o mapa
+    # Cria instância do mapa.
     mapa = mapaCA()
-    mapa.leMapaExportado("masmorras/masmorra0.txt")
+
+    # Parecendo Dwarf Fortress.
+    print("Desejas criar uma nova masmorra ou carregar uma existente?")
+    escolha = input("1 - Criar nova masmorra  |  2 - Carregar masmorra existente\n")
+
+    match escolha:
+        case "1":
+            dimensoes = int(input("Digite as dimensões do mapa (ex: 20 para 20x20):"))
+            mapa.setAltura(dimensoes)
+            mapa.setLargura(dimensoes)
+            # Número padrão de gerações. Deixar como escolha do jogador depois.
+            mapa.geraMapa(geracoes=10)
+        case "2":
+            caminhoArquivo = input("Determine a masmorra a ser carregada (ex: 'masmorras/masmorra0.txt'):\n")
+            mapa.leMapaExportado(caminhoArquivo)
     
     # Cria o jogador
     player = jogador()
