@@ -200,7 +200,7 @@ class jogador:
         self.ultimoItemInserido += 1
         print(f"Item '{item.nome}' adicionado ao invetório!")
 
-    def usaItem(self, id):
+    def usaItem(self, id, mapa=None):
         for i in range(len(self.iventorio)):
             if self.iventorio[i][0] == id:
                 item = self.iventorio[i][1]
@@ -212,7 +212,8 @@ class jogador:
                             self.hp += 50
                         case '✦':
                             print("Você sente que um caminho novo se abriu...")
-                            # Implementar lógica de 'caminhos escondidos' depois.
+                            if mapa:
+                                criaPortal(mapa)
                         case '≈':
                             print("Você lê o pergaminho e ganha sabedoria!")
                             self.xp += 20
@@ -223,6 +224,87 @@ class jogador:
                     return False
         print(f"Nenhum item com ID {id} encontrado no invetório.")
         return False
+    
+    def entraPortal(self, mapa):
+        # Verifica os 8 blocos adjacentes ao jogador
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                # Ignora a própria posição do jogador
+                if dx == 0 and dy == 0:
+                    continue
+                
+                nx, ny = self.x + dx, self.y + dy
+                
+                # Verifica se está dentro dos limites
+                if 0 <= nx < mapa.altura and 0 <= ny < mapa.largura:
+                    # Verifica se há um portal adjacente
+                    if mapa.matriz[nx][ny].estado == '#':
+                        print("Você entrou no portal secreto!")
+                        print("Você é puxado para outra dimensão...")
+                        
+                        # Lista de masmorras disponíveis
+                        masmorras_disponiveis = []
+                        for i in range(11):
+                            caminho = f"masmorras/masmorra{i}.txt"
+                            if os.path.exists(caminho):
+                                masmorras_disponiveis.append(caminho)
+                        
+                        if not masmorras_disponiveis:
+                            print("Erro: Nenhuma masmorra disponível!")
+                            return False
+                        
+                        # Escolhe uma masmorra aleatória
+                        nova_masmorra = random.choice(masmorras_disponiveis)
+                        
+                        try:
+                            # Carrega a nova masmorra
+                            mapa.leMapaExportado(nova_masmorra)
+                            
+                            # Encontra uma posição inicial válida na nova masmorra
+                            if not self.encontraPosicaoInicial(mapa):
+                                print("Erro: Não foi possível encontrar uma posição válida na nova masmorra!")
+                                return False
+                            
+                            # Coloca o jogador no mapa
+                            mapa.matriz[self.x][self.y].estado = self.sprite
+                            
+                            # Limpa itens antigos
+                            mapa.itens = []
+                            
+                            # Popula a nova masmorra com itens
+                            populaMasmorraComItens(mapa, quantidade_items=10)
+                            
+                            print(f"Você acordou em uma nova masmorra! ({self.x}, {self.y})")
+                            input("Pressione ENTER para continuar...")
+                            return True
+                            
+                        except Exception as e:
+                            print(f"Erro ao carregar masmorra: {e}")
+                            return False
+        
+        print("Não há portal próximo!")
+        return False
+    
+# Popula a masmorra com um caminho secreto
+def criaPortal(mapa):
+    """Cria um portal secreto em uma posição aleatória do mapa"""
+    tentativas = 0
+    max_tentativas = 100
+    
+    while tentativas < max_tentativas:
+        tentativas += 1
+        x = random.randint(0, mapa.altura - 1)
+        y = random.randint(0, mapa.largura - 1)
+        
+        # Verifica se a célula é um caminho livre
+        if mapa.matriz[x][y].estado == 0:
+            # Coloca o portal (representado por '#')
+            mapa.matriz[x][y].estado = '#'
+            print(f"Portal secreto criado em ({x}, {y})")
+            return True
+    
+    print("Falha ao criar portal secreto após várias tentativas.")
+    return False
 
 # Função para popular a masmorra com itens
 def populaMasmorraComItens(mapa, quantidade_items=10):
@@ -274,7 +356,7 @@ def desenhaInterface(player, mapa):
     print(f"{mapa.titulo}")
     mapa.imprimeMapa()
     print()
-    print("Controles: 7-8-9 (↖↑↗) | 4-6 (←→) | 1-2-3 (↙↓↘) | 'q' para sair")
+    print("Controles: 7-8-9 (↖↑↗) | 4-6 (←→) | 1-2-3 (↙↓↘) | 'i' inventário | 'u' usar item | 'p' entrar portal | 'q' sair")
     print("-" * 50)
 
 # Processa input do jogador.
@@ -286,8 +368,11 @@ def processaComando(comando, player, mapa, jogando):
             print("Pressione o 'id' do item que deseja usar:")
             player.checaIventorio()
             id_item = int(input("ID do item: "))
-            player.usaItem(id_item)
+            player.usaItem(id_item, mapa)
             input("Pressione ENTER para continuar...")
+            # MUHAHAHAHA!
+        elif comando.lower() == 'p':
+            player.entraPortal(mapa)    
         elif comando.lower() == 'q':
             print("Encerrando o jogo...")
             jogando = False
