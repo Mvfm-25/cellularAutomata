@@ -58,18 +58,35 @@ class jogador:
                 self.armadura = 5
 
         print(f"Personagem criado com sucesso! \nNome : {self.nome} \nClasse : {self.classe} \nHP : {self.hp} \nAtaque : {self.ataque} \nArmadura : {self.armadura}\n")
-        input("Pressione ENTER para começar...")
+        input("Pressione ENTER para progredir...\n")
 
     # Função para encontrar uma posição inicial válida (caminho livre) & com não muitos vizinhos.
     # Não queremos prender o jogador em um beco sem saída.
     def encontraPosicaoInicial(self, mapa):
+        # Tenta encontrar uma posição com pelo menos um caminho livre ao redor (≤ 3 vizinhos = parede)
         for i in range(mapa.altura):
             for j in range(mapa.largura):
                 if mapa.matriz[i][j].estado == 0:
-                    if(mapa.matriz[i][j].calculaVizinhos(mapa.matriz) < 3 ):
-                        self.x = i
-                        self.y = j
-                    return True
+                    vizinhos = mapa.matriz[i][j].calculaVizinhos(mapa.matriz)
+                    if vizinhos <= 3:
+                        # Verifica se há pelo menos um vizinho livre para movimentação
+                        tem_caminho_livre = False
+                        for dx in [-1, 0, 1]:
+                            for dy in [-1, 0, 1]:
+                                if dx == 0 and dy == 0:
+                                    continue
+                                nx, ny = i + dx, j + dy
+                                if 0 <= nx < mapa.altura and 0 <= ny < mapa.largura:
+                                    if mapa.matriz[nx][ny].estado == 0:
+                                        tem_caminho_livre = True
+                                        break
+                            if tem_caminho_livre:
+                                break
+                        
+                        if tem_caminho_livre:
+                            self.x = i
+                            self.y = j
+                            return True
         return False
 
     # Só pra certificar se o jogador vai bater na parede ou não.
@@ -133,7 +150,7 @@ def desenhaInterface(player, mapa):
     print(f"Posição: ({player.x}, {player.y})")
     print("=" * 50)
     print()
-    #print(mapa.titulo)
+    print(f"{mapa.titulo}")
     mapa.imprimeMapa()
     print()
     print("Controles: 7-8-9 (↖↑↗) | 4-6 (←→) | 1-2-3 (↙↓↘) | 'q' para sair")
@@ -143,6 +160,9 @@ def desenhaInterface(player, mapa):
 def main():
     # Cria instância do mapa.
     mapa = mapaCA()
+
+    # Cria instância do jogador.
+    player = jogador()
 
     # Parecendo Dwarf Fortress.
     print("Desejas criar uma nova masmorra ou carregar uma existente?")
@@ -158,9 +178,7 @@ def main():
         case "2":
             caminhoArquivo = input("Determine a masmorra a ser carregada (ex: 'masmorras/masmorra0.txt'):\n")
             mapa.leMapaExportado(caminhoArquivo)
-    
-    # Cria o jogador
-    player = jogador()
+            player.encontraPosicaoInicial(mapa)
     
     # Encontra posição inicial
     if not player.encontraPosicaoInicial(mapa):

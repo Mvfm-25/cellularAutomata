@@ -161,6 +161,7 @@ class mapa:
         f = ["Dos Mortos", "Dos Condenados", "Das Almas", "Do Senhor", "Da Desgraça", "Da Perdição"]
 
         nome = random.choice(p) + " " + random.choice(m) + " " + random.choice(f)
+        self.titulo = nome
         return nome
     
     # Maneira mais chata que achei pra fazer isso, mas funciona pelo menos.
@@ -176,7 +177,9 @@ class mapa:
         with open(caminhoArquivo, 'r', encoding="utf-8") as f:
             print(f"Lendo mapa do arquivo : {caminhoArquivo}")
             linhas = f.readlines()
-            #self.titulo = linhas[0].strip()
+            # Captura o título da primeira linha
+            self.titulo = linhas[0].strip()
+            print(f"Título do mapa : {self.titulo}")
             # Ignora as duas outras linhas (data & espaço vazio).
             linhas = linhas[3:]
             # Assumindo sempre mapas quadrados por enquanto.
