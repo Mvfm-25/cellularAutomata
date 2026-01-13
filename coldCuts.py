@@ -8,6 +8,31 @@ from cellularAutomata import mapa as mapaCA
 import cellularAutomata as ca
 import subprocess
 import os
+import random
+
+# Lista de sprites de itens disponíveis
+ITENS_DISPONIVEIS = [
+    {'nome': 'Poção de Vida', 'sprite': '♥', 'valor': 50, 'usavel': True},
+    {'nome': 'Moeda de Ouro', 'sprite': '$', 'valor': 10, 'usavel': False},
+    {'nome': 'Chave', 'sprite': '✦', 'valor': 25, 'usavel': True},
+    {'nome': 'Pergaminho', 'sprite': '≈', 'valor': 15, 'usavel': True},
+    {'nome': 'Cristal Mágico', 'sprite': '◆', 'valor': 100, 'usavel': False},
+]
+
+# Classe de itens que podem ser encontrados no mapa.
+class item:
+
+    def __init__(self, nome, sprite, valor, usavel, x, y):
+        self.nome = nome
+        self.sprite = sprite
+        # Para itens como moedas etc.
+        self.valor = valor
+        # Verifica se jogador consegue usar item (poções, chaves, pergaminhos.)
+        self.usavel = usavel
+        self.x = x
+        self.y = y
+    
+
 
 # O Rogue!
 class jogador:
@@ -26,6 +51,8 @@ class jogador:
         self.hp = 0
         self.ataque = 0
         self.armadura = 0
+        # Começando a testar a coleta de itens
+        self.iventorio = []
         self.criaPersonagem()
 
     # Função para criar personagem. Nada muito complicado ainda.
@@ -99,6 +126,8 @@ class jogador:
         if mapa.matriz[novoX][novoY].estado == 1:
             print("Caminho bloqueado!")
             return False
+        
+        # Permite movimento para células vazias ou com items
         return True
 
     # Função pra movimentar o jogador.
@@ -129,13 +158,105 @@ class jogador:
 
         # Verifica colisão antes de mover
         if self.checaColisao(mapa, novoX, novoY):
+            # Verifica se há item na nova posição
+            estadoAtual = mapa.matriz[novoX][novoY].estado
+            item_coletado = None
+            
+            if estadoAtual != 0 and estadoAtual != 1 and estadoAtual != self.sprite:
+                # É um item! Encontra o item na lista global
+                for i in range(len(mapa.itens)):
+                    if mapa.itens[i].x == novoX and mapa.itens[i].y == novoY:
+                        item_coletado = mapa.itens.pop(i)
+                        break
+            
             # Restaura célula antiga
             mapa.matriz[velhoX][velhoY].estado = 0
             # Move para nova posição
             self.x, self.y = novoX, novoY
             mapa.matriz[self.x][self.y].estado = self.sprite
+            
+            # Se coletou um item
+            if item_coletado:
+                self.adicionaItemIventorio(item_coletado)
+            
             return True
         return False
+    
+    # Mais e mais parecido com rogue.
+    def checaIventorio(self):
+        if self.iventorio:
+            print("Itens no invetório:")
+            for item in self.iventorio:
+                print(f"{item[0]} - {item[1].nome} (Valor: {item[1].valor})")
+            print()
+        else :
+            print("Invetório vazio!\n")
+
+    # Verificação de 'id' de itens.
+    ultimoItemInserido = 0
+    # Bem direto.
+    def adicionaItemIventorio(self, item):
+        self.iventorio.append([self.ultimoItemInserido, item])
+        self.ultimoItemInserido += 1
+        print(f"Item '{item.nome}' adicionado ao invetório!")
+
+    def usaItem(self, id):
+        for i in range(len(self.iventorio)):
+            if self.iventorio[i][0] == id:
+                item = self.iventorio[i][1]
+                if item.usavel:
+                    print(f"Usando item: {item.nome}")
+                    # Implementar efeitos do item aqui
+                    match item.sprite:
+                        case '♥':
+                            self.hp += 50
+                        case '✦':
+                            print("Você sente que um caminho novo se abriu...")
+                            # Implementar lógica de 'caminhos escondidos' depois.
+                        case '≈':
+                            print("Você lê o pergaminho e ganha sabedoria!")
+                            self.xp += 20
+                    self.iventorio.pop(i)
+                    return True
+                else:
+                    print(f"O item '{item.nome}' não pode ser usado.")
+                    return False
+        print(f"Nenhum item com ID {id} encontrado no invetório.")
+        return False
+
+# Função para popular a masmorra com itens
+def populaMasmorraComItens(mapa, quantidade_items=10):
+    """Coloca items aleatoriamente no mapa em células vazias"""
+    itens_colocados = 0
+    tentativas = 0
+    max_tentativas = quantidade_items * 10  # Evita loop infinito
+    
+    while itens_colocados < quantidade_items and tentativas < max_tentativas:
+        tentativas += 1
+        
+        # Escolhe posição aleatória
+        x = random.randint(0, mapa.altura - 1)
+        y = random.randint(0, mapa.largura - 1)
+        
+        # Verifica se é caminho livre (não é parede nem jogador)
+        if mapa.matriz[x][y].estado == 0:
+            # Escolhe item aleatório
+            item_data = random.choice(ITENS_DISPONIVEIS)
+            novo_item = item(
+                nome=item_data['nome'],
+                sprite=item_data['sprite'],
+                valor=item_data['valor'],
+                usavel=item_data['usavel'],
+                x=x,
+                y=y
+            )
+            
+            # Adiciona à lista de itens do mapa e atualiza matriz
+            mapa.itens.append(novo_item)
+            mapa.matriz[x][y].estado = novo_item.sprite
+            itens_colocados += 1
+    
+    print(f"Total de itens colocados: {itens_colocados}")
 
 # Função para limpar a tela (funciona em Windows e Linux)
 def limpaTela():
@@ -145,7 +266,7 @@ def limpaTela():
 def desenhaInterface(player, mapa):
     limpaTela()
     print("=" * 50)
-    print(f"Jogador: {player.nome} | Classe: {player.classe}")
+    print(f"Jogador: {player.nome} | Classe: {player.classe} | Nível: {player.lvl} | XP: {player.xp}")
     print(f"HP: {player.hp} | Ataque: {player.ataque} | Armadura: {player.armadura}")
     print(f"Posição: ({player.x}, {player.y})")
     print("=" * 50)
@@ -155,6 +276,27 @@ def desenhaInterface(player, mapa):
     print()
     print("Controles: 7-8-9 (↖↑↗) | 4-6 (←→) | 1-2-3 (↙↓↘) | 'q' para sair")
     print("-" * 50)
+
+# Processa input do jogador.
+def processaComando(comando, player, mapa, jogando):
+        if comando.lower() == 'i':
+            player.checaIventorio()
+            input("Pressione ENTER para continuar...")
+        elif comando.lower() == 'u':
+            print("Pressione o 'id' do item que deseja usar:")
+            player.checaIventorio()
+            id_item = int(input("ID do item: "))
+            player.usaItem(id_item)
+            input("Pressione ENTER para continuar...")
+        elif comando.lower() == 'q':
+            print("Encerrando o jogo...")
+            jogando = False
+        elif comando in ['1', '2', '3', '4', '6', '7', '8', '9']:
+            player.movimenta(mapa, comando)
+        else:
+            print("Comando inválido!")
+            input("Pressione ENTER para continuar...")
+
 
 # GAME LOOP PRINCIPAL
 def main():
@@ -188,6 +330,12 @@ def main():
     # Coloca o jogador no mapa
     mapa.matriz[player.x][player.y].estado = player.sprite
     
+    # Inicializa lista de itens no mapa
+    mapa.itens = []
+    
+    # Popula masmorra com itens
+    populaMasmorraComItens(mapa, quantidade_items=10)
+    
     # Loop principal do jogo
     jogando = True
     while jogando:
@@ -196,16 +344,7 @@ def main():
         
         # Recebe input do jogador
         comando = input("Seu comando: ").strip()
-        
-        # Processa comando
-        if comando.lower() == 'q':
-            print("Encerrando o jogo...")
-            jogando = False
-        elif comando in ['1', '2', '3', '4', '6', '7', '8', '9']:
-            player.movimenta(mapa, comando)
-        else:
-            print("Comando inválido!")
-            input("Pressione ENTER para continuar...")
+        processaComando(comando, player, mapa, jogando)
 
 if __name__ == "__main__":
     main()

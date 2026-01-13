@@ -88,9 +88,12 @@ class mapa:
                     contParedes += 1
                 elif(self.matriz[i][j].estado == "@"):
                     color.cprint("@", "yellow", end=" ")
-                else:
+                elif(self.matriz[i][j].estado == 0):
                     color.cprint("0", "white", end=" ")
                     contCaminhos += 1
+                else:
+                    # Renderiza itens em verde
+                    color.cprint(self.matriz[i][j].estado, "green", end=" ")
             print()
         print(f"Número de Paredes : {contParedes} | Número de Caminhos : {contCaminhos}")
         print()
