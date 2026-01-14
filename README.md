@@ -1,5 +1,8 @@
 # cellularAutomata
-Brincando com os princípios de cellular automata em python pra 'geração de cavernas'.
+Brincando com os princípios de cellular automata em python pra 'geração de cavernas' & um joguinho.
+
+# Música
+Música por kappemusic (https://www.youtube.com/channel/UCSKAVQOJr3wTNs9klXg-QIg)
 
 # Criação de personagens
 Secção de criação de personagens, especificando nome, classe & seus atributos.
