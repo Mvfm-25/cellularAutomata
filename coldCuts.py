@@ -160,6 +160,45 @@ class jogador:
                             self.y = j
                             return True
         return False
+    
+    # Função de ataque
+    def ataca(self, mapa):
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                if dx == 0 and dy == 0:
+                    continue
+                
+                targetX = self.x + dx
+                targetY = self.y + dy
+                
+                # Verifica se há um inimigo nesta posição
+                inimigoAlvo = None
+                for adv in mapa.adversarios:
+                    if adv.x == targetX and adv.y == targetY:
+                        inimigoAlvo = adv
+                        break
+                
+                if inimigoAlvo:
+                    # Realiza o ataque
+                    if inimigoAlvo.armadura > 0:
+                        inimigoAlvo.armadura = inimigoAlvo.armadura - self.ataque
+                        print(f"Você atacou {inimigoAlvo.nome} e acertou sua armadura!")
+
+                    if self.ataque > 0:
+                        inimigoAlvo.hp -= self.ataque
+                        print(f"Causou {self.ataque} de dano! (HP: {inimigoAlvo.hp})")
+                    else:
+                        print("Sua arma não perfurou a armadura do inimigo!")
+                    
+                    # Verifica se o inimigo morreu
+                    if inimigoAlvo.hp <= 0:
+                        print(f"Você derrotou o {inimigoAlvo.nome}!")
+                        mapa.adversarios.remove(inimigoAlvo)
+                        mapa.matriz[targetX][targetY].estado = 0
+                        # Ganha um pouco de XP pela vitória
+                        self.checaNivel(50)
+                    
+                    return # Ataca apenas o primeiro encontrado
 
     # Só pra certificar se o jogador vai bater na parede ou não.
     def checaColisao(self, mapa, novoX, novoY):
@@ -172,6 +211,10 @@ class jogador:
             print("Caminho bloqueado!")
             return False
         
+        # Detecta inimigos
+        if mapa.matriz[novoX][novoY].estado in ['g', 'T', 'E', 'f']:
+            print("Inimigo encontrado!")
+
         # Permite movimento para células vazias ou com items
         return True
 
@@ -363,6 +406,7 @@ class jogador:
             input("Pressione ENTER para continuar...")
         else :
             self.xp += adicaoXP
+            print(f"Você ganhou {adicaoXP}xp!")
         
 
     
@@ -513,13 +557,17 @@ def desenhaInterface(player, mapa):
     print(f"{mapa.titulo}")
     mapa.imprimeMapa()
     print()
-    print("Controles: 7-8-9 (↖↑↗) | 4-6 (←→) | 1-2-3 (↙↓↘) | 'i' inventário | 'u' usar item | 'p' entrar portal | 'q' sair")
+    print("Controles: 7-8-9 (↖↑↗) | 4-6 (←→) | 1-2-3 (↙↓↘) | 'a' Ataca | 'i' Inventário | 'u' Usar item | 'p' Entrar portal | 'q' Sair")
     print("-" * 50)
 
 # Processa input do jogador.
 def processaComando(comando, player, mapa, jogando):
         if comando.lower() == 'i':
             player.checaIventorio()
+            input("Pressione ENTER para continuar...")
+        elif comando.lower() == 'a':
+            print("Atacando!")
+            player.ataca(mapa)
             input("Pressione ENTER para continuar...")
         elif comando.lower() == 'u':
             print("Pressione o 'id' do item que deseja usar:")
