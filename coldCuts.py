@@ -103,6 +103,7 @@ class jogador:
         self.hp = 0
         self.ataque = 0
         self.armadura = 0
+        self.acuracia = 0
 
         # Começando a testar a coleta de itens
         self.iventorio = []
@@ -121,24 +122,28 @@ class jogador:
                 self.hp = 150
                 self.ataque = 20
                 self.armadura = 0
+                self.acuracia = 80
                 self.xpParaProximoNivel = 100
             case "2":
                 self.classe = "Mago"
                 self.hp = 100
                 self.ataque = 15
                 self.armadura = 5
+                self.acuracia = 85
                 self.xpParaProximoNivel = 175
             case "3":
                 self.classe = "Cavaleiro"
                 self.hp = 125
                 self.ataque = 10
                 self.armadura = 10
+                self.acuracia = 90
                 self.xpParaProximoNivel = 150
             case "4":
                 self.classe = "Ladrão"
                 self.hp = 110
                 self.ataque = 12
                 self.armadura = 5
+                self.acuracia = 95
                 self.xpParaProximoNivel = 125
 
         print(f"Personagem criado com sucesso! \nNome : {self.nome} \nClasse : {self.classe} \nHP : {self.hp} \nAtaque : {self.ataque} \nArmadura : {self.armadura}\n")
@@ -173,50 +178,84 @@ class jogador:
                             return True
         return False
     
-    # Função de ataque - Sistema progressivo com armadura
-    def ataca(self, mapa):
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                if dx == 0 and dy == 0:
-                    continue
-                
-                targetX = self.x + dx
-                targetY = self.y + dy
-                
-                # Verifica se há um inimigo nesta posição
-                inimigoAlvo = None
-                for adv in mapa.adversarios:
-                    if adv.x == targetX and adv.y == targetY:
-                        inimigoAlvo = adv
-                        break
-                
-                if inimigoAlvo:
-                    # Realiza o ataque com sistema progressivo
-                    danoRestante = self.ataque
-                    
-                    # Primeiro, a armadura do inimigo absorve o dano
-                    if inimigoAlvo.armadura > 0:
-                        danoAbsorvido = min(danoRestante, inimigoAlvo.armadura)
-                        inimigoAlvo.armadura -= danoAbsorvido
-                        danoRestante -= danoAbsorvido
-                        print(f"Você atacou {inimigoAlvo.nome}! Sua armadura absorveu {danoAbsorvido} de dano! (Armadura: {inimigoAlvo.armadura})")
-                    
-                    # Se ainda houver dano, deduz do HP
-                    if danoRestante > 0:
-                        inimigoAlvo.hp -= danoRestante
-                        print(f"Você atacou {inimigoAlvo.nome} diretamente! Causou {danoRestante} de dano! (HP do {inimigoAlvo.nome}: {inimigoAlvo.hp})")
-                    else:
-                        print(f"A armadura do {inimigoAlvo.nome} resistiu completamente ao seu ataque!")
-                    
-                    # Verifica se o inimigo morreu
-                    if inimigoAlvo.hp <= 0:
-                        print(f"\n*** Você derrotou o {inimigoAlvo.nome}! ***\n")
-                        mapa.adversarios.remove(inimigoAlvo)
-                        mapa.matriz[targetX][targetY].estado = 0
-                        # Ganha um pouco de XP pela vitória
-                        self.checaNivel(50)
-                    
-                    return # Ataca apenas o primeiro encontrado
+    # Trazendo incerteza de ataques.
+    # Deixar acuracia de classes altas o suficiente para não deixar tão insuportável o jogo.
+    def verificaAcerto(self):
+        chance = random.randint(1, 100)
+        if chance <= self.acuracia:
+            return True
+        else:
+            return False
+        
+# Função de ataque direcional.
+    def ataca(self, mapa, direcao):
+        alvoX, alvoY = 0, 0
+        match direcao:
+            case "7":
+                alvoX, alvoY = self.x - 1, self.y - 1
+            case "8":
+                alvoX, alvoY = self.x - 1, self.y
+            case "9":
+                alvoX, alvoY = self.x - 1, self.y + 1
+            case "4":
+                alvoX, alvoY = self.x, self.y - 1
+            case "6":
+                alvoX, alvoY = self.x, self.y + 1
+            case "1":
+                alvoX, alvoY = self.x + 1, self.y - 1
+            case "2":
+                alvoX, alvoY = self.x + 1, self.y
+            case "3":
+                alvoX, alvoY = self.x + 1, self.y + 1
+            case _:
+                print("Direção inválida!")
+                return
+            
+        # Procura se existe algum inimigo em tal posição.    
+        inimigoAlvo = None
+        for adv in mapa.adversarios:
+            if adv.x == alvoX and adv.y == alvoY:
+                # Encontrou correspondência exata.
+                inimigoAlvo = adv
+                break
+        # Caso exista inimigo alvo.
+        if inimigoAlvo:
+            danoRestante = self.ataque
+            # Armadura recebe o dano primeiro.
+            if inimigoAlvo.armadura > 0:
+                danoAbsorvido = min(danoRestante, inimigoAlvo.armadura)
+                inimigoAlvo.armadura -= danoAbsorvido
+                danoRestante -= danoAbsorvido
+                print(f"{self.nome} atacou {inimigoAlvo.nome}! Sua armadura absorveu {danoAbsorvido} de dano! (Armadura restante : {inimigoAlvo.armadura})")
+            # Se ainda houver dano, deduzirdo hp
+            if danoRestante > 0:
+                inimigoAlvo.hp -= danoRestante
+                print(f"{self.nome} atacou {inimigoAlvo.nome} diretamente! {inimigoAlvo.nome} recebeu {danoRestante} de dano! (HP restante : {inimigoAlvo.hp})")
+            # Armadura tankou todo dano!
+            else :
+                print(f"A armadura de {inimigoAlvo.nome} é muito forte! Sua armadura resistiu completamente seu ataque!")
+
+            # Verifica se o inimigo morreu
+            if inimigoAlvo.hp <= 0:
+                print(f"\n*** Você derrotou o {inimigoAlvo.nome}! ***\n")
+                mapa.adversarios.remove(inimigoAlvo)
+                mapa.matriz[alvoX][alvoY].estado = 0
+                # Ganha um pouco de XP pela vitória
+                self.checaNivel(50)
+            
+        else :
+            # Debug
+            #print(f"Estou tentando acertar : {mapa.matriz[alvoX][alvoY].estado}, de tipo : {type(mapa.matriz[alvoX][alvoY].estado)}")
+            if(mapa.matriz[alvoX][alvoY].estado == 1):
+                print("Sua arma atingiu uma parede!")
+                erro = random.randint(1, 100)
+                if(erro >= 95):
+                    print(f"Ela rebate e lhe atinge, causando {self.ataque} de dano!")
+            else :
+                print("Sua arma é usada para atingir o ar!")
+
+
+        return
 
     # Só pra certificar se o jogador vai bater na parede ou não.
     def checaColisao(self, mapa, novoX, novoY):
@@ -714,9 +753,10 @@ def processaComando(comando, player, mapa, jogando):
         elif comando.lower() == 't':
             print("Você... Não faz nada?")
             input("Pressione ENTER para continuar.")
-        elif comando.lower() == 'a':
+        # Alterando para ataques direcionais.
+        elif 'a' in comando.lower():
             print("Atacando!")
-            player.ataca(mapa)
+            player.ataca(mapa, comando[1])
             input("Pressione ENTER para continuar...")
         elif comando.lower() == 'u':
             print("Pressione o 'id' do item que deseja usar:")
