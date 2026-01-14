@@ -91,9 +91,11 @@ class mapa:
                 elif(self.matriz[i][j].estado == 0):
                     color.cprint("0", "white", end=" ")
                     contCaminhos += 1
-                elif(self.matriz[i][j].estado == "#"):
+                elif(self.matriz[i][j].estado == "8"):
                     # Sprite da PORTA SECRETA.
-                    color.cprint("#", "light_blue", end="")
+                    color.cprint("8", "light_blue", end="")
+                elif(self.matriz[i][j].estado in ['g', 'T', 'E', 'f']):
+                    color.cprint("^", "red", end="")
                 else:
                     # Renderiza itens em verde
                     color.cprint(self.matriz[i][j].estado, "green", end=" ")

@@ -13,15 +13,6 @@ import random
 import json
 import threading
 
-# Lista de sprites de itens disponíveis
-ITENS_DISPONIVEIS = [
-    {'nome': 'Poção de Vida', 'sprite': '♥', 'valor': 50, 'usavel': True},
-    {'nome': 'Moeda de Ouro', 'sprite': '$', 'valor': 10, 'usavel': False},
-    {'nome': 'Chave', 'sprite': '✦', 'valor': 25, 'usavel': True},
-    {'nome': 'Pergaminho', 'sprite': '≈', 'valor': 15, 'usavel': True},
-    {'nome': 'Cristal Mágico', 'sprite': '◆', 'valor': 100, 'usavel': False},
-]
-
 # Classe de itens que podem ser encontrados no mapa.
 class item:
 
@@ -261,13 +252,13 @@ class jogador:
                     print(f"Usando item: {item.nome}")
                     # Implementar efeitos do item aqui
                     match item.sprite:
-                        case '♥':
+                        case 'V':
                             self.hp += 50
-                        case '✦':
+                        case 'C':
                             print("Você sente que um caminho novo se abriu...")
                             if mapa:
                                 criaPortal(mapa)
-                        case '≈':
+                        case 'P':
                             print("Você lê o pergaminho e ganha sabedoria!")
                             self.xp += 20
                     self.iventorio.pop(i)
@@ -415,56 +406,95 @@ class GerenciadorMusica:
 def criaPortal(mapa):
     """Cria um portal secreto em uma posição aleatória do mapa"""
     tentativas = 0
-    max_tentativas = 100
+    maxTentativas = 100
     
-    while tentativas < max_tentativas:
+    while tentativas < maxTentativas:
         tentativas += 1
         x = random.randint(0, mapa.altura - 1)
         y = random.randint(0, mapa.largura - 1)
         
         # Verifica se a célula é um caminho livre
         if mapa.matriz[x][y].estado == 0:
-            # Coloca o portal (representado por '#')
-            mapa.matriz[x][y].estado = '#'
+            # Coloca o portal (representado por '8')
+            mapa.matriz[x][y].estado = '8'
             print(f"Portal secreto criado em ({x}, {y})")
             return True
     
     print("Falha ao criar portal secreto após várias tentativas.")
     return False
 
-# Função para popular a masmorra com itens
-def populaMasmorraComItens(mapa, quantidade_items=10):
-    """Coloca items aleatoriamente no mapa em células vazias"""
-    itens_colocados = 0
+# Popula masmorra com inimigos. 
+# Quase idêntico ao de itens.
+def populaMasmorraComInimigos(mapa, quantidadeInimigos=20):
+    adversarios = 0
     tentativas = 0
-    max_tentativas = quantidade_items * 10  # Evita loop infinito
+    maxTentativas = quantidadeInimigos * 10
+
+    while adversarios < quantidadeInimigos and tentativas < maxTentativas:
+        tentativas += 1
+
+        x = random.randint(0, mapa.altura - 1)
+        y = random.randint(0, mapa.largura - 1)
+
+        if mapa.matriz[x][y].estado == 0:
+            with open("entidades/adversarios.json", "r") as file :
+                advData = json.load(file)
+
+            advEscolhido = random.choice(advData)
+            novoAdv = adversario(
+                nome=advEscolhido['nome'],
+                sprite=advEscolhido['sprite'],
+                hp=advEscolhido['hp'],
+                ataque=advEscolhido['ataque'],
+                armadura=advEscolhido['armadura'],
+                x=x,
+                y=y
+            )
+
+            mapa.adversarios.append(novoAdv)
+            mapa.matriz[x][y].estado = novoAdv.sprite
+            adversarios += 1
+
+    print(f"Total de inimigos inseridos : {adversarios}")
+
+
+# Função para popular a masmorra com itens
+def populaMasmorraComItens(mapa, quantidadeItems=10):
+    """Coloca items aleatoriamente no mapa em células vazias"""
+    itensColocados = 0
+    tentativas = 0
+    maxTentativas = quantidadeItems * 10  # Evita loop infinito
     
-    while itens_colocados < quantidade_items and tentativas < max_tentativas:
+    while itensColocados < quantidadeItems and tentativas < maxTentativas:
         tentativas += 1
         
         # Escolhe posição aleatória
         x = random.randint(0, mapa.altura - 1)
         y = random.randint(0, mapa.largura - 1)
         
-        # Verifica se é caminho livre (não é parede nem jogador)
+        # Verifica se é caminho livre, não ocupado por mais nada.
         if mapa.matriz[x][y].estado == 0:
-            # Escolhe item aleatório
-            item_data = random.choice(ITENS_DISPONIVEIS)
-            novo_item = item(
-                nome=item_data['nome'],
-                sprite=item_data['sprite'],
-                valor=item_data['valor'],
-                usavel=item_data['usavel'],
+            # Escolhe item aleatório, importando de items do JSON
+            with open("entidades/items.json", "r") as file:
+                itemData = json.load(file)
+
+            itemEscolhido = random.choice(itemData)
+
+            novoItem = item(
+                nome=itemEscolhido['nome'],
+                sprite=itemEscolhido['sprite'],
+                valor=itemEscolhido['valor'],
+                usavel=itemEscolhido['usavel'],
                 x=x,
                 y=y
             )
             
             # Adiciona à lista de itens do mapa e atualiza matriz
-            mapa.itens.append(novo_item)
-            mapa.matriz[x][y].estado = novo_item.sprite
-            itens_colocados += 1
+            mapa.itens.append(novoItem)
+            mapa.matriz[x][y].estado = novoItem.sprite
+            itensColocados += 1
     
-    print(f"Total de itens colocados: {itens_colocados}")
+    print(f"Total de itens colocados: {itensColocados}")
 
 # Função para limpar a tela (funciona em Windows e Linux)
 def limpaTela():
@@ -546,12 +576,16 @@ def main():
     
     # Coloca o jogador no mapa
     mapa.matriz[player.x][player.y].estado = player.sprite
-    
+   
+    # Inicializa lista de inimigos no mapa
+    mapa.adversarios = []
     # Inicializa lista de itens no mapa
     mapa.itens = []
     
+    # Popula masmorra com inimigos
+    populaMasmorraComInimigos(mapa, quantidadeInimigos=20)
     # Popula masmorra com itens
-    populaMasmorraComItens(mapa, quantidade_items=10)
+    populaMasmorraComItens(mapa, quantidadeItems=10)
     
     # Loop principal do jogo
     jogando = True
