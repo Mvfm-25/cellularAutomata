@@ -50,26 +50,27 @@ class adversario :
             return False
 
     def ataca(self, jogador):
-        # Oito imediatos, transformer em própria função depois.
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                if dx != jogador.sprite and dy != jogador.sprite:
-                    # Jogador não está no alcance.
-                    continue
-                else:
-                    # Vê se acertou o ataque.
-                    if self.verificaAcerto():
-                        if jogador.armadura != 0:
-                            danoCausado = self.ataque - jogador.armadura
-                            print(f"{self.nome} atacou e acertou sua armadura!")
-                            if danoCausado < 0:
-                                danoCausado = 0
-                        else :
-                            danoCausado = self.ataque
-                            jogador.hp -= danoCausado
-                            print(f"{self.nome} atacou e causou {danoCausado} de dano!")
-                    else :
-                        print(f"{self.nome} tentou te acertar... Mas falhou!")
+        # Verifica se o jogador está nos 8 espaços adjacentes imediatos
+        distanciaX = abs(self.x - jogador.x)
+        distanciaY = abs(self.y - jogador.y)
+        
+        # Se não está adjacente, não pode atacar
+        if distanciaX > 1 or distanciaY > 1:
+            return
+        
+        # Vê se acertou o ataque.
+        if self.verificaAcerto():
+            if jogador.armadura != 0:
+                danoCausado = self.ataque - jogador.armadura
+                print(f"{self.nome} atacou e acertou sua armadura!")
+                if danoCausado < 0:
+                    danoCausado = 0
+            else:
+                danoCausado = self.ataque
+                jogador.hp -= danoCausado
+                print(f"{self.nome} atacou e causou {danoCausado} de dano!")
+        else:
+            print(f"{self.nome} tentou te acertar... Mas falhou!")
 
 # O Rogue!
 class jogador:
@@ -592,6 +593,9 @@ def main():
     while jogando:
         # Desenha a interface
         desenhaInterface(player, mapa)
+
+        for adversario in mapa.adversarios :
+            adversario.ataca(player)
         
         # Recebe input do jogador
         comando = input("Seu comando: ").strip()
