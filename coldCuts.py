@@ -6,6 +6,7 @@
 
 from cellularAutomata import mapa as mapaCA
 import cellularAutomata as ca
+from collections import deque
 import pygame
 import time
 import os
@@ -228,8 +229,8 @@ class jogador:
             print("Caminho bloqueado!")
             return False
         
-        # Detecta inimigos
-        if mapa.matriz[novoX][novoY].estado in ['g', 'T', 'E', 'f']:
+        # Detecta inimigos (índices 100-199)
+        if isinstance(mapa.matriz[novoX][novoY].estado, int) and 100 <= mapa.matriz[novoX][novoY].estado < 200:
             print("Inimigo encontrado!")
 
         # Permite movimento para células vazias ou com items
@@ -267,7 +268,8 @@ class jogador:
             estadoAtual = mapa.matriz[novoX][novoY].estado
             item_coletado = None
             
-            if estadoAtual != 0 and estadoAtual != 1 and estadoAtual != self.sprite:
+            # Verifica se é um item (índices 200-299)
+            if isinstance(estadoAtual, int) and 200 <= estadoAtual < 300:
                 # É um item! Encontra o item na lista global
                 for i in range(len(mapa.itens)):
                     if mapa.itens[i].x == novoX and mapa.itens[i].y == novoY:
@@ -315,13 +317,24 @@ class jogador:
                     match item.sprite:
                         case 'V':
                             self.hp += 50
+                            self.iventorio.pop(i)
+                            return True
                         case 'C':
                             print("Você sente que um caminho novo se abriu...")
                             if mapa:
-                                criaPortal(mapa)
+                                # Verifica se o portal foi criado com sucesso
+                                if criaPortal(mapa):
+                                    self.iventorio.pop(i)
+                                    return True
+                                else:
+                                    print("Algo deu errado ao abrir o portal...")
+                                    return False
+                            return False
                         case 'P':
                             print("Você lê o pergaminho e ganha sabedoria!")
                             self.xp += 20
+                            self.iventorio.pop(i)
+                            return True
                     self.iventorio.pop(i)
                     return True
                 else:
@@ -482,23 +495,122 @@ class GerenciadorMusica:
 # Popula a masmorra com um caminho secreto
 def criaPortal(mapa):
     """Cria um portal secreto em uma posição aleatória do mapa"""
+    
+    # Verifica primeiro se já existe um portal no mapa
+    for i in range(mapa.altura):
+        for j in range(mapa.largura):
+            if mapa.matriz[i][j].estado == '8' or mapa.matriz[i][j].estado == 8:
+                print("Já existe um portal aberto no mapa!")
+                return False
+    
+    # Primeiro, tenta encontrar células vazias de forma aleatória (mais rápido)
     tentativas = 0
-    maxTentativas = 100
+    maxTentativas = 200
     
     while tentativas < maxTentativas:
         tentativas += 1
         x = random.randint(0, mapa.altura - 1)
         y = random.randint(0, mapa.largura - 1)
         
-        # Verifica se a célula é um caminho livre
+        # Verifica se a célula é um caminho livre (estado == 0)
+        # Não pode ser parede (1), nem item, nem inimigo, nem portal
         if mapa.matriz[x][y].estado == 0:
-            # Coloca o portal (representado por '8')
+            # Coloca o portal (representado por '8' como string)
             mapa.matriz[x][y].estado = '8'
             print(f"Portal secreto criado em ({x}, {y})")
             return True
     
-    print("Falha ao criar portal secreto após várias tentativas.")
+    # Se não encontrou aleatoriamente, faz uma busca sistemática
+    print("Buscando célula vazia de forma sistemática...")
+    for i in range(mapa.altura):
+        for j in range(mapa.largura):
+            if mapa.matriz[i][j].estado == 0:
+                mapa.matriz[i][j].estado = '8'
+                print(f"Portal secreto criado em ({i}, {j})")
+                return True
+    
+    print("Falha ao criar portal secreto: não há células vazias no mapa!")
     return False
+
+# Método para facilitar encontrar o portal secreto.
+# Pura conveniência, talvez secreto?
+# Usando BFS
+def pintaCaminhoPortal(mapa, player):
+    """Usa BFS para encontrar e pintar o caminho até o portal secreto em ciano."""
+    
+    # Primeiro, encontra a posição do portal (verifica tanto string quanto número para compatibilidade)
+    portal_x, portal_y = None, None
+    for i in range(mapa.altura):
+        for j in range(mapa.largura):
+            estado = mapa.matriz[i][j].estado
+            if estado == '8' or estado == 8:
+                portal_x, portal_y = i, j
+                break
+        if portal_x is not None:
+            break
+    
+    # Se não encontrar portal
+    if portal_x is None:
+        print("Nenhum portal aberto no mapa!")
+        input("Pressione ENTER para continuar...")
+        return False
+    
+    # BFS para encontrar o caminho mais curto
+    fila = deque([(player.x, player.y)])
+    visitados = {(player.x, player.y)}
+    pai = {(player.x, player.y): None}  # Para rastrear o caminho
+    
+    # Direções dos 8 movimentos (incluindo diagonais) - correspondem aos movimentos do jogador
+    # 7: ↖, 8: ↑, 9: ↗, 4: ←, 6: →, 1: ↙, 2: ↓, 3: ↘
+    direções = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
+    
+    encontrou_portal = False
+    
+    # BFS
+    while fila and not encontrou_portal:
+        x, y = fila.popleft()
+        
+        # Se encontrou o portal
+        if x == portal_x and y == portal_y:
+            encontrou_portal = True
+            break
+        
+        # Explora vizinhos
+        for dx, dy in direções:
+            nx, ny = x + dx, y + dy
+            
+            # Verifica limites
+            if 0 <= nx < mapa.altura and 0 <= ny < mapa.largura:
+                estado_vizinho = mapa.matriz[nx][ny].estado
+                # Verifica se não visitou e é caminho livre ou portal
+                if (nx, ny) not in visitados and (estado_vizinho == 0 or estado_vizinho == '8' or estado_vizinho == 8):
+                    visitados.add((nx, ny))
+                    pai[(nx, ny)] = (x, y)
+                    fila.append((nx, ny))
+    
+    # Se encontrou caminho
+    if encontrou_portal:
+        # Reconstrói o caminho
+        caminho = []
+        atual = (portal_x, portal_y)
+        
+        while pai[atual] is not None:
+            caminho.append(pai[atual])
+            atual = pai[atual]
+        
+        # Pinta o caminho em ciano (representado por 'C')
+        for x, y in caminho:
+            # Não pinta a posição do jogador
+            if not (x == player.x and y == player.y):
+                mapa.matriz[x][y].estado = 'C'
+        
+        print(f"Caminho para o portal encontrado! Distância: {len(caminho)} passos.")
+        input("Pressione ENTER para continuar...")
+        return True
+    else:
+        print("Não há caminho até o portal!")
+        input("Pressione ENTER para continuar...")
+        return False
 
 # Popula masmorra com inimigos. 
 # Quase idêntico ao de itens.
@@ -529,7 +641,8 @@ def populaMasmorraComInimigos(mapa, quantidadeInimigos=20):
             )
 
             mapa.adversarios.append(novoAdv)
-            mapa.matriz[x][y].estado = novoAdv.sprite
+            # Armazena o índice do inimigo (100 + id)
+            mapa.matriz[x][y].estado = 100 + advEscolhido['id']
             adversarios += 1
 
     print(f"Total de inimigos inseridos : {adversarios}")
@@ -568,7 +681,8 @@ def populaMasmorraComItens(mapa, quantidadeItems=10):
             
             # Adiciona à lista de itens do mapa e atualiza matriz
             mapa.itens.append(novoItem)
-            mapa.matriz[x][y].estado = novoItem.sprite
+            # Armazena o índice do item (200 + id)
+            mapa.matriz[x][y].estado = 200 + itemEscolhido['id']
             itensColocados += 1
     
     print(f"Total de itens colocados: {itensColocados}")
@@ -589,7 +703,7 @@ def desenhaInterface(player, mapa):
     print(f"{mapa.titulo}")
     mapa.imprimeMapa()
     print()
-    print("Controles: 7-8-9 (↖↑↗) | 4-6 (←→) | 1-2-3 (↙↓↘) | 'a' Ataca | 'i' Inventário | 'u' Usar item | 'p' Entrar portal | 'q' Sair")
+    print("Controles: 7-8-9 (↖↑↗) | 4-6 (←→) | 1-2-3 (↙↓↘) | 'a' Ataca | 'c' Caminho | 'i' Inventário | 'u' Usar item | 'p' Entrar portal | 'q' Sair")
     print("-" * 50)
 
 # Processa input do jogador.
@@ -613,6 +727,8 @@ def processaComando(comando, player, mapa, jogando):
             # MUHAHAHAHA!
         elif comando.lower() == 'p':
             player.entraPortal(mapa)
+        elif comando.lower() == 'c':
+            pintaCaminhoPortal(mapa, player)
         elif comando.lower() == 'q':
             print("Encerrando o jogo...")
             jogando = False

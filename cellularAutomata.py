@@ -7,6 +7,7 @@ import numpy as np
 import random
 import termcolor as color
 import time
+import json
 from datetime import datetime
 
 # Estrutura básica de uma célula.
@@ -78,6 +79,15 @@ class mapa:
     # Faz o que diz fazer. 
     # Agora com cores!
     def imprimeMapa(self):
+
+        # Importa dados de inimigos.
+        with open("entidades/adversarios.json", "r") as file0 :
+            npcData = json.load(file0)
+
+        # Importa dados dos itens.
+        with open("entidades/items.json", "r") as file1:
+            itmData = json.load(file1)
+
         # Contagem de de céulas Caminhos ou Paredes. 
         contParedes = 0
         contCaminhos = 0
@@ -91,14 +101,22 @@ class mapa:
                 elif(self.matriz[i][j].estado == 0):
                     color.cprint("0", "white", end=" ")
                     contCaminhos += 1
+                elif(self.matriz[i][j].estado == "C"):
+                    # Caminho para o portal (ciano)
+                    color.cprint("*", "light_blue", end=" ")
                 elif(self.matriz[i][j].estado == "8"):
                     # Sprite da PORTA SECRETA.
                     color.cprint("8", "light_blue", end=" ")
-                elif(self.matriz[i][j].estado in ['g', 'T', 'E', 'f']):
-                    color.cprint(self.matriz[i][j].estado, "red", end=" ")
-                else:
-                    # Renderiza itens em verde
-                    color.cprint(self.matriz[i][j].estado, "green", end=" ")
+                elif(isinstance(self.matriz[i][j].estado, int) and self.matriz[i][j].estado >= 100 and self.matriz[i][j].estado < 200):
+                    # Renderiza inimigos (índices 100-199)
+                    npcIndex = self.matriz[i][j].estado - 100
+                    if npcIndex < len(npcData):
+                        color.cprint(npcData[npcIndex]["sprite"], "red", end=" ")
+                elif(isinstance(self.matriz[i][j].estado, int) and self.matriz[i][j].estado >= 200 and self.matriz[i][j].estado < 300):
+                    # Renderiza itens (índices 200-299)
+                    itmIndex = self.matriz[i][j].estado - 200
+                    if itmIndex < len(itmData):
+                        color.cprint(itmData[itmIndex]["sprite"], "green", end=" ")
             print()
         print(f"Número de Paredes : {contParedes} | Número de Caminhos : {contCaminhos}")
         print()
