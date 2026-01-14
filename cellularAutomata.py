@@ -1,7 +1,7 @@
 # Brincando com geração de cavernas usando cellular automata.
 # [mvfm]
 #
-# Criação : 09/01/2026  ||  Última modificação : 13/01/2026
+# Criação : 09/01/2026  ||  Última modificação : 14/01/2026
 
 import numpy as np
 import random
@@ -183,23 +183,23 @@ class mapa:
     # Torna 'jogável' o mapa escrito em arquivo.
     def leMapaExportado(self, caminhoArquivo):
         with open(caminhoArquivo, 'r', encoding="utf-8") as f:
-            print(f"Lendo mapa do arquivo : {caminhoArquivo}")
+            #print(f"Lendo mapa do arquivo : {caminhoArquivo}")
             linhas = f.readlines()
             # Captura o título da primeira linha
             self.titulo = linhas[0].strip()
-            print(f"Título do mapa : {self.titulo}")
+            #print(f"Título do mapa : {self.titulo}")
             # Ignora as duas outras linhas (data & espaço vazio).
             linhas = linhas[3:]
             # Assumindo sempre mapas quadrados por enquanto.
             self.altura = len(linhas)
             self.largura = len(linhas)
-            print(f"Dimensões : {self.largura}x{self.altura}")
+            #print(f"Dimensões : {self.largura}x{self.altura}")
             self.matriz = [[celula(i, j) for j in range(self.largura)] for i in range(self.altura)]
             for i in range(self.altura):
                 valores = linhas[i].strip().split()
                 for j in range(self.largura):
                     self.matriz[i][j].estado = int(valores[j])
-        print(f"Mapa importado do arquivo : {caminhoArquivo}")
+        #print(f"Mapa importado do arquivo : {caminhoArquivo}")
 
         return self
 

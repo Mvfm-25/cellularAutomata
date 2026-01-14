@@ -12,6 +12,7 @@ import os
 import random
 import json
 import threading
+import sys
 
 # Classe de itens que podem ser encontrados no mapa.
 class item:
@@ -60,15 +61,25 @@ class adversario :
         
         # Vê se acertou o ataque.
         if self.verificaAcerto():
-            if jogador.armadura != 0:
-                danoCausado = self.ataque - jogador.armadura
-                print(f"{self.nome} atacou e acertou sua armadura!")
-                if danoCausado < 0:
-                    danoCausado = 0
+            danoRestante = self.ataque
+            
+            # Primeiro, a armadura absorve o dano
+            if jogador.armadura > 0:
+                danoAbsorvido = min(danoRestante, jogador.armadura)
+                jogador.armadura -= danoAbsorvido
+                danoRestante -= danoAbsorvido
+                print(f"{self.nome} atacou! Sua armadura absorveu {danoAbsorvido} de dano! (Armadura: {jogador.armadura})")
+            
+            # Se ainda houver dano, deduz do HP
+            if danoRestante > 0:
+                jogador.hp -= danoRestante
+                print(f"{self.nome} te atacou diretamente! Você recebeu {danoRestante} de dano!")
+                
+                # Verifica se o jogador morreu
+                if jogador.hp <= 0:
+                    jogador.lidaMorte(self)
             else:
-                danoCausado = self.ataque
-                jogador.hp -= danoCausado
-                print(f"{self.nome} atacou e causou {danoCausado} de dano!")
+                print("Sua armadura resistiu completamente ao ataque!")
         else:
             print(f"{self.nome} tentou te acertar... Mas falhou!")
 
@@ -161,7 +172,7 @@ class jogador:
                             return True
         return False
     
-    # Função de ataque
+    # Função de ataque - Sistema progressivo com armadura
     def ataca(self, mapa):
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
@@ -179,20 +190,26 @@ class jogador:
                         break
                 
                 if inimigoAlvo:
-                    # Realiza o ataque
+                    # Realiza o ataque com sistema progressivo
+                    danoRestante = self.ataque
+                    
+                    # Primeiro, a armadura do inimigo absorve o dano
                     if inimigoAlvo.armadura > 0:
-                        inimigoAlvo.armadura = inimigoAlvo.armadura - self.ataque
-                        print(f"Você atacou {inimigoAlvo.nome} e acertou sua armadura!")
-
-                    if self.ataque > 0:
-                        inimigoAlvo.hp -= self.ataque
-                        print(f"Causou {self.ataque} de dano! (HP: {inimigoAlvo.hp})")
+                        danoAbsorvido = min(danoRestante, inimigoAlvo.armadura)
+                        inimigoAlvo.armadura -= danoAbsorvido
+                        danoRestante -= danoAbsorvido
+                        print(f"Você atacou {inimigoAlvo.nome}! Sua armadura absorveu {danoAbsorvido} de dano! (Armadura: {inimigoAlvo.armadura})")
+                    
+                    # Se ainda houver dano, deduz do HP
+                    if danoRestante > 0:
+                        inimigoAlvo.hp -= danoRestante
+                        print(f"Você atacou {inimigoAlvo.nome} diretamente! Causou {danoRestante} de dano! (HP do {inimigoAlvo.nome}: {inimigoAlvo.hp})")
                     else:
-                        print("Sua arma não perfurou a armadura do inimigo!")
+                        print(f"A armadura do {inimigoAlvo.nome} resistiu completamente ao seu ataque!")
                     
                     # Verifica se o inimigo morreu
                     if inimigoAlvo.hp <= 0:
-                        print(f"Você derrotou o {inimigoAlvo.nome}!")
+                        print(f"\n*** Você derrotou o {inimigoAlvo.nome}! ***\n")
                         mapa.adversarios.remove(inimigoAlvo)
                         mapa.matriz[targetX][targetY].estado = 0
                         # Ganha um pouco de XP pela vitória
@@ -326,9 +343,12 @@ class jogador:
                 # Verifica se está dentro dos limites
                 if 0 <= nx < mapa.altura and 0 <= ny < mapa.largura:
                     # Verifica se há um portal adjacente
-                    if mapa.matriz[nx][ny].estado == '#':
+                    if mapa.matriz[nx][ny].estado == '8':
+                        print("\n" + "="*50)
                         print("Você entrou no portal secreto!")
                         print("Você é puxado para outra dimensão...")
+                        print("="*50 + "\n")
+                        input("Pressione ENTER para continuar...")
                         
                         # Lista de masmorras disponíveis
                         masmorras_disponiveis = []
@@ -356,14 +376,16 @@ class jogador:
                             # Coloca o jogador no mapa
                             mapa.matriz[self.x][self.y].estado = self.sprite
                             
-                            # Limpa itens antigos
+                            # Limpa itens & adversarios antigos
+                            mapa.adversarios = []
                             mapa.itens = []
                             
+                            # Popula masmorra com novos inimigos
+                            populaMasmorraComInimigos(mapa, quantidadeInimigos=20)
                             # Popula a nova masmorra com itens
                             populaMasmorraComItens(mapa, quantidade_items=10)
                             
                             print(f"Você acordou em uma nova masmorra! ({self.x}, {self.y})")
-                            input("Pressione ENTER para continuar...")
                             # Ganha XP por explorar masmorra
                             self.checaNivel(75)
                             return True
@@ -372,7 +394,7 @@ class jogador:
                             print(f"Erro ao carregar masmorra: {e}")
                             return False
         
-        print("Não há portal próximo!")
+        print("Não há portal próximo! Procure por um portal secreto próximo a você.")
         return False
     
     # Progressão de nível
@@ -408,7 +430,17 @@ class jogador:
             self.xp += adicaoXP
             print(f"Você ganhou {adicaoXP}xp!")
         
+    # And died and went to hell. Good game!
+    def lidaMorte(self, adversario):
+        limpaTela()
 
+        print(f"Você morreu! Sua aventura termina aqui, {self.nome}...")
+        print(f"{adversario.nome} se certificou disso!")
+
+        print("-" * 50)
+        print(f"Você passou {self.lvl} meses nas cavernas... Acumulou {self.xp} de conhecimento.\n")
+        print("-" * 50)
+        sys.exit(0)
     
 # Classe para gerenciar a música de fundo
 class GerenciadorMusica:
@@ -565,6 +597,9 @@ def processaComando(comando, player, mapa, jogando):
         if comando.lower() == 'i':
             player.checaIventorio()
             input("Pressione ENTER para continuar...")
+        elif comando.lower() == 't':
+            print("Você... Não faz nada?")
+            input("Pressione ENTER para continuar.")
         elif comando.lower() == 'a':
             print("Atacando!")
             player.ataca(mapa)
@@ -577,7 +612,7 @@ def processaComando(comando, player, mapa, jogando):
             input("Pressione ENTER para continuar...")
             # MUHAHAHAHA!
         elif comando.lower() == 'p':
-            player.entraPortal(mapa)    
+            player.entraPortal(mapa)
         elif comando.lower() == 'q':
             print("Encerrando o jogo...")
             jogando = False
