@@ -47,12 +47,15 @@ class jogador:
         self.sprite = "@"
         self.classe = ""
 
+        # Progressão de personagem
         self.lvl = 1
         self.xp = 0
+        self.xpParaProximoNivel = 0
 
         self.hp = 0
         self.ataque = 0
         self.armadura = 0
+
         # Começando a testar a coleta de itens
         self.iventorio = []
         self.criaPersonagem()
@@ -70,21 +73,25 @@ class jogador:
                 self.hp = 150
                 self.ataque = 20
                 self.armadura = 0
+                self.xpParaProximoNivel = 100
             case "2":
                 self.classe = "Mago"
                 self.hp = 100
                 self.ataque = 15
                 self.armadura = 5
+                self.xpParaProximoNivel = 175
             case "3":
                 self.classe = "Cavaleiro"
                 self.hp = 125
                 self.ataque = 10
                 self.armadura = 10
+                self.xpParaProximoNivel = 150
             case "4":
                 self.classe = "Ladrão"
                 self.hp = 110
                 self.ataque = 12
                 self.armadura = 5
+                self.xpParaProximoNivel = 125
 
         print(f"Personagem criado com sucesso! \nNome : {self.nome} \nClasse : {self.classe} \nHP : {self.hp} \nAtaque : {self.ataque} \nArmadura : {self.armadura}\n")
         input("Pressione ENTER para progredir...\n")
@@ -278,6 +285,8 @@ class jogador:
                             
                             print(f"Você acordou em uma nova masmorra! ({self.x}, {self.y})")
                             input("Pressione ENTER para continuar...")
+                            # Ganha XP por explorar masmorra
+                            self.checaNivel(75)
                             return True
                             
                         except Exception as e:
@@ -286,6 +295,77 @@ class jogador:
         
         print("Não há portal próximo!")
         return False
+    
+    # Progressão de nível
+    # Tentando deixar as diferenças entre classes mais significativas.
+    def checaNivel(self, adicaoXP):
+        if(self.xp + adicaoXP) >= self.xpParaProximoNivel:
+            self.lvl += 1
+            self.xp = (self.xp + adicaoXP) - self.xpParaProximoNivel
+            self.xpParaProximoNivel = int(self.xpParaProximoNivel * 1.50)
+
+            # Atualização stats
+            print("Parabéns! Você subiu de nível!")
+            match self.classe:
+                case "Bárbaro":
+                    self.hp += 15
+                    self.ataque += 5
+                    self.armadura += 1
+                case "Mago":
+                    self.hp += 5
+                    self.ataque += 7
+                    self.armadura += 2
+                case "Cavaleiro":
+                    self.hp += 10
+                    self.ataque += 3
+                    self.armadura += 5
+                case "Ladrão":
+                    self.hp += 5
+                    self.ataque += 4
+                    self.armadura += 3
+            print(f"Novo nível: {self.lvl} | HP: {self.hp} | Ataque: {self.ataque} | Armadura: {self.armadura}\n")
+            input("Pressione ENTER para continuar...")
+        else :
+            self.xp += adicaoXP
+        
+
+    
+# Classe para gerenciar a música de fundo
+class GerenciadorMusica:
+    def __init__(self):
+        pygame.mixer.init()
+        self.tocando = False
+        self.thread = None
+    
+    def tocaMusica(self, caminhoMusica, loops=-1):
+        """Toca música em uma thread separada, não bloqueando o game loop"""
+        if self.tocando:
+            self.paraMusica()
+        
+        self.tocando = True
+        self.thread = threading.Thread(target=self._tocaEmBackground, args=(caminhoMusica, loops))
+        self.thread.daemon = True  # Thread daemon encerra com o programa
+        self.thread.start()
+    
+    def _tocaEmBackground(self, caminhoMusica, loops):
+        """Função interna que roda na thread separada"""
+        try:
+            pygame.mixer.music.load(caminhoMusica)
+            pygame.mixer.music.play(loops)
+            
+            # Aguarda enquanto música toca
+            while pygame.mixer.music.get_busy() and self.tocando:
+                time.sleep(0.1)
+        except Exception as e:
+            print(f"Erro ao tocar música: {e}")
+        finally:
+            self.tocando = False
+    
+    def paraMusica(self):
+        """Para a música"""
+        self.tocando = False
+        pygame.mixer.music.stop()
+        
     
 # Popula a masmorra com um caminho secreto
 def criaPortal(mapa):
@@ -385,44 +465,6 @@ def processaComando(comando, player, mapa, jogando):
             input("Pressione ENTER para continuar...")
         
         return jogando
-
-# Classe para gerenciar a música de fundo
-class GerenciadorMusica:
-    def __init__(self):
-        pygame.mixer.init()
-        self.tocando = False
-        self.thread = None
-    
-    def tocaMusica(self, caminhoMusica, loops=-1):
-        """Toca música em uma thread separada, não bloqueando o game loop"""
-        if self.tocando:
-            self.paraMusica()
-        
-        self.tocando = True
-        self.thread = threading.Thread(target=self._tocaEmBackground, args=(caminhoMusica, loops))
-        self.thread.daemon = True  # Thread daemon encerra com o programa
-        self.thread.start()
-    
-    def _tocaEmBackground(self, caminhoMusica, loops):
-        """Função interna que roda na thread separada"""
-        try:
-            pygame.mixer.music.load(caminhoMusica)
-            pygame.mixer.music.play(loops)
-            
-            # Aguarda enquanto música toca
-            while pygame.mixer.music.get_busy() and self.tocando:
-                time.sleep(0.1)
-        except Exception as e:
-            print(f"Erro ao tocar música: {e}")
-        finally:
-            self.tocando = False
-    
-    def paraMusica(self):
-        """Para a música"""
-        self.tocando = False
-        pygame.mixer.music.stop()
-        
-
 
 # GAME LOOP PRINCIPAL
 def main():
