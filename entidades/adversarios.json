@@ -1,0 +1,6 @@
+[
+    {"nome": "Goblin", "sprite": "g",  "hp": 30, "ataque" : 5, "armadura": 0},
+    {"nome": "Troll", "sprite": "T", "hp": 100, "ataque": 20, "armadura": 10},
+    {"nome": "Esqueleto", "sprite": "E", "hp": 50, "ataque": 10, "armadura": 5},
+    {"nome": "Fada", "sprite": "f", "hp": 10, "ataque": 2, "armadura" : 0}
+]

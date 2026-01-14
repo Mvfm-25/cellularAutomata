@@ -2,7 +2,7 @@
 # Aproveitar do que já foi construido em 'cellularAutomata.py' pra fazer um rogue-like.
 # [mvfm]
 #
-# Criado : 12/01/2026  ||  Última modificação : 12/01/2026
+# Criado : 12/01/2026  ||  Última modificação : 14/01/2026
 
 from cellularAutomata import mapa as mapaCA
 import cellularAutomata as ca
@@ -10,6 +10,7 @@ import pygame
 import time
 import os
 import random
+import json
 import threading
 
 # Lista de sprites de itens disponíveis
@@ -33,8 +34,51 @@ class item:
         self.usavel = usavel
         self.x = x
         self.y = y
-    
 
+# Coisas para matar
+class adversario :
+
+    def __init__(self, nome, sprite, hp, ataque, armadura, x,y):
+        self.nome = nome
+        self.sprite = sprite
+        self.hp = hp
+
+        self.acuracia = random.randint(25, 90)
+        self.ataque = ataque
+        self.armadura = armadura
+
+        self.x = x
+        self.y = y
+        pass
+
+    def verificaAcerto(self):
+        chance = random.randint(1, 100)
+        if chance <= self.acuracia:
+            return True
+        else:
+            return False
+
+    def ataca(self, jogador):
+        # Oito imediatos, transformer em própria função depois.
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                if dx != jogador.sprite and dy != jogador.sprite:
+                    # Jogador não está no alcance.
+                    continue
+                else:
+                    # Vê se acertou o ataque.
+                    if self.verificaAcerto():
+                        if jogador.armadura != 0:
+                            danoCausado = self.ataque - jogador.armadura
+                            print(f"{self.nome} atacou e acertou sua armadura!")
+                            if danoCausado < 0:
+                                danoCausado = 0
+                        else :
+                            danoCausado = self.ataque
+                            jogador.hp -= danoCausado
+                            print(f"{self.nome} atacou e causou {danoCausado} de dano!")
+                    else :
+                        print(f"{self.nome} tentou te acertar... Mas falhou!")
 
 # O Rogue!
 class jogador:

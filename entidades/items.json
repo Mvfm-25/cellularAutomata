@@ -1,0 +1,7 @@
+[
+    {"nome": "Poção de Vida", "sprite": "♥", "valor": 50, "usavel": true},
+    {"nome": "Moeda de Ouro", "sprite": "$", "valor": 10, "usavel": false},
+    {"nome": "Chave", "sprite": "✦", "valor": 25, "usavel": true},
+    {"nome": "Pergaminho", "sprite": "≈", "valor": 15, "usavel": true},
+    {"nome": "Cristal Mágico", "sprite": "◆", "valor": 100, "usavel": false}
+]
