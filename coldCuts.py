@@ -2,7 +2,7 @@
 # Aproveitar do que já foi construido em 'cellularAutomata.py' pra fazer um rogue-like.
 # [mvfm]
 #
-# Criado : 12/01/2026  ||  Última modificação : 14/01/2026
+# Criado : 12/01/2026  ||  Última modificação : 15/01/2026
 
 from cellularAutomata import mapa as mapaCA
 import cellularAutomata as ca
@@ -101,12 +101,14 @@ class jogador:
         self.xpParaProximoNivel = 0
 
         self.hp = 0
+        self.hpMaximo = 0
         self.ataque = 0
         self.armadura = 0
         self.acuracia = 0
 
         # Começando a testar a coleta de itens
-        self.iventorio = []
+        self.inventario = []
+        self.ultimoItemInserido = 0
         self.criaPersonagem()
 
     # Função para criar personagem. Nada muito complicado ainda.
@@ -120,6 +122,7 @@ class jogador:
             case "1":
                 self.classe = "Bárbaro"
                 self.hp = 150
+                self.hpMaximo = 150
                 self.ataque = 20
                 self.armadura = 0
                 self.acuracia = 80
@@ -127,6 +130,7 @@ class jogador:
             case "2":
                 self.classe = "Mago"
                 self.hp = 100
+                self.hpMaximo = 100
                 self.ataque = 15
                 self.armadura = 5
                 self.acuracia = 85
@@ -134,6 +138,7 @@ class jogador:
             case "3":
                 self.classe = "Cavaleiro"
                 self.hp = 125
+                self.hpMaximo = 125
                 self.ataque = 10
                 self.armadura = 10
                 self.acuracia = 90
@@ -141,6 +146,7 @@ class jogador:
             case "4":
                 self.classe = "Ladrão"
                 self.hp = 110
+                self.hpMaximo = 110
                 self.ataque = 12
                 self.armadura = 5
                 self.acuracia = 95
@@ -155,18 +161,18 @@ class jogador:
         # Tenta encontrar uma posição com pelo menos um caminho livre ao redor (≤ 3 vizinhos = parede)
         for i in range(mapa.altura):
             for j in range(mapa.largura):
-                if mapa.matriz[i][j].estado == 0:
+                if mapa.matriz[i][j].estado == '0':
                     vizinhos = mapa.matriz[i][j].calculaVizinhos(mapa.matriz)
                     if vizinhos <= 3:
                         # Verifica se há pelo menos um vizinho livre para movimentação
                         tem_caminho_livre = False
                         for dx in [-1, 0, 1]:
                             for dy in [-1, 0, 1]:
-                                if dx == 0 and dy == 0:
+                                if dx == '0' and dy == '0':
                                     continue
                                 nx, ny = i + dx, j + dy
                                 if 0 <= nx < mapa.altura and 0 <= ny < mapa.largura:
-                                    if mapa.matriz[nx][ny].estado == 0:
+                                    if mapa.matriz[nx][ny].estado == '0':
                                         tem_caminho_livre = True
                                         break
                             if tem_caminho_livre:
@@ -239,14 +245,14 @@ class jogador:
             if inimigoAlvo.hp <= 0:
                 print(f"\n*** Você derrotou o {inimigoAlvo.nome}! ***\n")
                 mapa.adversarios.remove(inimigoAlvo)
-                mapa.matriz[alvoX][alvoY].estado = 0
+                mapa.matriz[alvoX][alvoY].estado = '0'
                 # Ganha um pouco de XP pela vitória
                 self.checaNivel(50)
             
         else :
             # Debug
             #print(f"Estou tentando acertar : {mapa.matriz[alvoX][alvoY].estado}, de tipo : {type(mapa.matriz[alvoX][alvoY].estado)}")
-            if(mapa.matriz[alvoX][alvoY].estado == 1):
+            if(mapa.matriz[alvoX][alvoY].estado == '1'):
                 print("Sua arma atingiu uma parede!")
                 erro = random.randint(1, 100)
                 if(erro >= 95):
@@ -264,12 +270,12 @@ class jogador:
             print("Limite do mapa!")
             return False
         
-        if mapa.matriz[novoX][novoY].estado == 1:
+        if mapa.matriz[novoX][novoY].estado == '1':
             print("Caminho bloqueado!")
             return False
         
-        # Detecta inimigos (índices 100-199)
-        if isinstance(mapa.matriz[novoX][novoY].estado, int) and 100 <= mapa.matriz[novoX][novoY].estado < 200:
+        # Detecta inimigos
+        if mapa.matriz[novoX][novoY].estado in mapa.spritesInimigos :
             print("Inimigo encontrado!")
 
         # Permite movimento para células vazias ou com items
@@ -304,66 +310,64 @@ class jogador:
         # Verifica colisão antes de mover
         if self.checaColisao(mapa, novoX, novoY):
             # Verifica se há item na nova posição
-            estadoAtual = mapa.matriz[novoX][novoY].estado
-            item_coletado = None
+            itemColetado = None
             
-            # Verifica se é um item (índices 200-299)
-            if isinstance(estadoAtual, int) and 200 <= estadoAtual < 300:
-                # É um item! Encontra o item na lista global
-                for i in range(len(mapa.itens)):
-                    if mapa.itens[i].x == novoX and mapa.itens[i].y == novoY:
-                        item_coletado = mapa.itens.pop(i)
-                        break
+            # Procura na lista de colecionáveis
+            for i in range(len(mapa.colecionaveis)):
+                if mapa.colecionaveis[i].x == novoX and mapa.colecionaveis[i].y == novoY:
+                    itemColetado = mapa.colecionaveis.pop(i)
+                    break
             
             # Restaura célula antiga
-            mapa.matriz[velhoX][velhoY].estado = 0
+            mapa.matriz[velhoX][velhoY].estado = '0'
             # Move para nova posição
             self.x, self.y = novoX, novoY
             mapa.matriz[self.x][self.y].estado = self.sprite
             
             # Se coletou um item
-            if item_coletado:
-                self.adicionaItemIventorio(item_coletado)
+            if itemColetado:
+                self.adicionaItemInventario(itemColetado)
             
             return True
         return False
     
     # Mais e mais parecido com rogue.
-    def checaIventorio(self):
-        if self.iventorio:
-            print("Itens no invetório:")
-            for item in self.iventorio:
+    def checaInventario(self):
+        if self.inventario:
+            print("Itens no inventário:")
+            for item in self.inventario:
                 print(f"{item[0]} - {item[1].nome} (Valor: {item[1].valor})")
             print()
         else :
-            print("Invetório vazio!\n")
+            print("Inventário vazio!\n")
 
-    # Verificação de 'id' de itens.
-    ultimoItemInserido = 0
     # Bem direto.
-    def adicionaItemIventorio(self, item):
-        self.iventorio.append([self.ultimoItemInserido, item])
+    def adicionaItemInventario(self, item):
+        self.inventario.append([self.ultimoItemInserido, item])
         self.ultimoItemInserido += 1
-        print(f"Item '{item.nome}' adicionado ao invetório!")
+        print(f"Item '{item.nome}' adicionado ao inventário!")
 
     def usaItem(self, id, mapa=None):
-        for i in range(len(self.iventorio)):
-            if self.iventorio[i][0] == id:
-                item = self.iventorio[i][1]
+        for i in range(len(self.inventario)):
+            if self.inventario[i][0] == id:
+                item = self.inventario[i][1]
                 if item.usavel:
                     print(f"Usando item: {item.nome}")
                     # Implementar efeitos do item aqui
                     match item.sprite:
                         case 'V':
-                            self.hp += 50
-                            self.iventorio.pop(i)
+                            cura = 50
+                            curaReal = min(cura, self.hpMaximo - self.hp)
+                            self.hp += curaReal
+                            print(f"Você recuperou {curaReal} de HP! (HP: {self.hp}/{self.hpMaximo})")
+                            self.inventario.pop(i)
                             return True
                         case 'C':
                             print("Você sente que um caminho novo se abriu...")
                             if mapa:
                                 # Verifica se o portal foi criado com sucesso
                                 if criaPortal(mapa):
-                                    self.iventorio.pop(i)
+                                    self.inventario.pop(i)
                                     return True
                                 else:
                                     print("Algo deu errado ao abrir o portal...")
@@ -372,14 +376,14 @@ class jogador:
                         case 'P':
                             print("Você lê o pergaminho e ganha sabedoria!")
                             self.xp += 20
-                            self.iventorio.pop(i)
+                            self.inventario.pop(i)
                             return True
-                    self.iventorio.pop(i)
+                    self.inventario.pop(i)
                     return True
                 else:
                     print(f"O item '{item.nome}' não pode ser usado.")
                     return False
-        print(f"Nenhum item com ID {id} encontrado no invetório.")
+        print(f"Nenhum item com ID {id} encontrado no inventário.")
         return False
     
     def entraPortal(self, mapa):
@@ -387,7 +391,7 @@ class jogador:
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
                 # Ignora a própria posição do jogador
-                if dx == 0 and dy == 0:
+                if dx == '0' and dy == '0':
                     continue
                 
                 nx, ny = self.x + dx, self.y + dy
@@ -403,26 +407,26 @@ class jogador:
                         input("Pressione ENTER para continuar...")
                         
                         # Lista de masmorras disponíveis
-                        masmorras_disponiveis = []
+                        masmorrasDisponiveis = []
                         for i in range(11):
                             caminho = f"masmorras/masmorra{i}.txt"
                             if os.path.exists(caminho):
-                                masmorras_disponiveis.append(caminho)
+                                masmorrasDisponiveis.append(caminho)
                         
-                        if not masmorras_disponiveis:
+                        if not masmorrasDisponiveis:
                             print("Erro: Nenhuma masmorra disponível!")
                             return False
                         
                         # Escolhe uma masmorra aleatória
-                        nova_masmorra = random.choice(masmorras_disponiveis)
+                        novaMasmorra = random.choice(masmorrasDisponiveis)
                         
                         try:
                             # Carrega a nova masmorra
-                            mapa.leMapaExportado(nova_masmorra)
+                            mapa.leMapaExportado(novaMasmorra)
 
                             # Limpa itens & adversarios antigos
                             mapa.adversarios = []
-                            mapa.itens = []
+                            mapa.colecionaveis = []
 
                             # Encontra uma posição inicial válida na nova masmorra ANTES de popular
                             # Isso garante que a posição do jogador não seja ocupada por itens/inimigos
@@ -471,21 +475,25 @@ class jogador:
             match self.classe:
                 case "Bárbaro":
                     self.hp += 15
+                    self.hpMaximo += 15
                     self.ataque += 5
                     self.armadura += 1
                 case "Mago":
                     self.hp += 5
+                    self.hpMaximo += 5
                     self.ataque += 7
                     self.armadura += 2
                 case "Cavaleiro":
                     self.hp += 10
+                    self.hpMaximo += 10
                     self.ataque += 3
                     self.armadura += 5
                 case "Ladrão":
                     self.hp += 5
+                    self.hpMaximo += 5
                     self.ataque += 4
                     self.armadura += 3
-            print(f"Novo nível: {self.lvl} | HP: {self.hp} | Ataque: {self.ataque} | Armadura: {self.armadura}\n")
+            print(f"Novo nível: {self.lvl} | HP: {self.hp} | Ataque: {self.ataque} | Armadura: {self.armadura} | HP max : {self.hpMaximo}\n")
             input("Pressione ENTER para continuar...")
         else :
             self.xp += adicaoXP
@@ -547,7 +555,7 @@ def criaPortal(mapa):
     # Verifica primeiro se já existe um portal no mapa
     for i in range(mapa.altura):
         for j in range(mapa.largura):
-            if mapa.matriz[i][j].estado == '8' or mapa.matriz[i][j].estado == 8:
+            if mapa.matriz[i][j].estado == '8':
                 print("Já existe um portal aberto no mapa!")
                 return False
     
@@ -562,7 +570,7 @@ def criaPortal(mapa):
         
         # Verifica se a célula é um caminho livre (estado == 0)
         # Não pode ser parede (1), nem item, nem inimigo, nem portal
-        if mapa.matriz[x][y].estado == 0:
+        if mapa.matriz[x][y].estado == '0':
             # Coloca o portal (representado por '8' como string)
             mapa.matriz[x][y].estado = '8'
             print(f"Portal secreto criado em ({x}, {y})")
@@ -572,7 +580,7 @@ def criaPortal(mapa):
     print("Buscando célula vazia de forma sistemática...")
     for i in range(mapa.altura):
         for j in range(mapa.largura):
-            if mapa.matriz[i][j].estado == 0:
+            if mapa.matriz[i][j].estado == '0':
                 mapa.matriz[i][j].estado = '8'
                 print(f"Portal secreto criado em ({i}, {j})")
                 return True
@@ -587,18 +595,18 @@ def pintaCaminhoPortal(mapa, player):
     """Usa BFS para encontrar e pintar o caminho até o portal secreto em ciano."""
     
     # Primeiro, encontra a posição do portal (verifica tanto string quanto número para compatibilidade)
-    portal_x, portal_y = None, None
+    portalX, portalY = None, None
     for i in range(mapa.altura):
         for j in range(mapa.largura):
             estado = mapa.matriz[i][j].estado
-            if estado == '8' or estado == 8:
-                portal_x, portal_y = i, j
+            if estado == '8' :
+                portalX, portalY = i, j
                 break
-        if portal_x is not None:
+        if portalX is not None:
             break
     
     # Se não encontrar portal
-    if portal_x is None:
+    if portalX is None:
         print("Nenhum portal aberto no mapa!")
         input("Pressione ENTER para continuar...")
         return False
@@ -612,15 +620,15 @@ def pintaCaminhoPortal(mapa, player):
     # 7: ↖, 8: ↑, 9: ↗, 4: ←, 6: →, 1: ↙, 2: ↓, 3: ↘
     direções = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
     
-    encontrou_portal = False
+    encontrouPortal = False
     
     # BFS
-    while fila and not encontrou_portal:
+    while fila and not encontrouPortal:
         x, y = fila.popleft()
         
         # Se encontrou o portal
-        if x == portal_x and y == portal_y:
-            encontrou_portal = True
+        if x == portalX and y == portalY:
+            encontrouPortal = True
             break
         
         # Explora vizinhos
@@ -629,28 +637,28 @@ def pintaCaminhoPortal(mapa, player):
             
             # Verifica limites
             if 0 <= nx < mapa.altura and 0 <= ny < mapa.largura:
-                estado_vizinho = mapa.matriz[nx][ny].estado
+                estadoVizinho = mapa.matriz[nx][ny].estado
                 # Verifica se não visitou e é caminho livre ou portal
-                if (nx, ny) not in visitados and (estado_vizinho == 0 or estado_vizinho == '8' or estado_vizinho == 8):
+                if (nx, ny) not in visitados and (estadoVizinho == '0' or estadoVizinho == '8'):
                     visitados.add((nx, ny))
                     pai[(nx, ny)] = (x, y)
                     fila.append((nx, ny))
     
     # Se encontrou caminho
-    if encontrou_portal:
+    if encontrouPortal:
         # Reconstrói o caminho
         caminho = []
-        atual = (portal_x, portal_y)
+        atual = (portalX, portalY)
         
         while pai[atual] is not None:
             caminho.append(pai[atual])
             atual = pai[atual]
         
-        # Pinta o caminho em ciano (representado por 'C')
+        # Pinta o caminho em ciano (representado por '*')
         for x, y in caminho:
             # Não pinta a posição do jogador
             if not (x == player.x and y == player.y):
-                mapa.matriz[x][y].estado = 'C'
+                mapa.matriz[x][y].estado = '*'
         
         print(f"Caminho para o portal encontrado! Distância: {len(caminho)} passos.")
         input("Pressione ENTER para continuar...")
@@ -673,7 +681,7 @@ def populaMasmorraComInimigos(mapa, quantidadeInimigos=20):
         x = random.randint(0, mapa.altura - 1)
         y = random.randint(0, mapa.largura - 1)
 
-        if mapa.matriz[x][y].estado == 0:
+        if mapa.matriz[x][y].estado == '0':
             with open("entidades/adversarios.json", "r") as file :
                 advData = json.load(file)
 
@@ -690,7 +698,7 @@ def populaMasmorraComInimigos(mapa, quantidadeInimigos=20):
 
             mapa.adversarios.append(novoAdv)
             # Armazena o índice do inimigo (100 + id)
-            mapa.matriz[x][y].estado = 100 + advEscolhido['id']
+            mapa.matriz[x][y].estado = novoAdv.sprite
             adversarios += 1
 
     print(f"Total de inimigos inseridos : {adversarios}")
@@ -698,7 +706,6 @@ def populaMasmorraComInimigos(mapa, quantidadeInimigos=20):
 
 # Função para popular a masmorra com itens
 def populaMasmorraComItens(mapa, quantidadeItems=10):
-    """Coloca items aleatoriamente no mapa em células vazias"""
     itensColocados = 0
     tentativas = 0
     maxTentativas = quantidadeItems * 10  # Evita loop infinito
@@ -711,7 +718,7 @@ def populaMasmorraComItens(mapa, quantidadeItems=10):
         y = random.randint(0, mapa.largura - 1)
         
         # Verifica se é caminho livre, não ocupado por mais nada.
-        if mapa.matriz[x][y].estado == 0:
+        if mapa.matriz[x][y].estado == '0':
             # Escolhe item aleatório, importando de items do JSON
             with open("entidades/items.json", "r") as file:
                 itemData = json.load(file)
@@ -728,9 +735,9 @@ def populaMasmorraComItens(mapa, quantidadeItems=10):
             )
             
             # Adiciona à lista de itens do mapa e atualiza matriz
-            mapa.itens.append(novoItem)
+            mapa.colecionaveis.append(novoItem)
             # Armazena o índice do item (200 + id)
-            mapa.matriz[x][y].estado = 200 + itemEscolhido['id']
+            mapa.matriz[x][y].estado = novoItem.sprite
             itensColocados += 1
     
     print(f"Total de itens colocados: {itensColocados}")
@@ -757,7 +764,7 @@ def desenhaInterface(player, mapa):
 # Processa input do jogador.
 def processaComando(comando, player, mapa, jogando):
         if comando.lower() == 'i':
-            player.checaIventorio()
+            player.checaInventario()
             input("Pressione ENTER para continuar...")
         elif comando.lower() == 't':
             print("Você... Não faz nada?")
@@ -769,7 +776,7 @@ def processaComando(comando, player, mapa, jogando):
             input("Pressione ENTER para continuar...")
         elif comando.lower() == 'u':
             print("Pressione o 'id' do item que deseja usar:")
-            player.checaIventorio()
+            player.checaInventario()
             id_item = int(input("ID do item: "))
             player.usaItem(id_item, mapa)
             input("Pressione ENTER para continuar...")
@@ -829,7 +836,7 @@ def main():
     # Inicializa lista de inimigos no mapa
     mapa.adversarios = []
     # Inicializa lista de itens no mapa
-    mapa.itens = []
+    mapa.colecionaveis = []
     
     # Popula masmorra com inimigos
     populaMasmorraComInimigos(mapa, quantidadeInimigos=20)

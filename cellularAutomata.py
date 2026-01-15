@@ -1,7 +1,7 @@
 # Brincando com geração de cavernas usando cellular automata.
 # [mvfm]
 #
-# Criação : 09/01/2026  ||  Última modificação : 14/01/2026
+# Criação : 09/01/2026  ||  Última modificação : 15/01/2026
 
 import numpy as np
 import random
@@ -60,6 +60,9 @@ class mapa:
         self.titulo = ""
         self.matriz = []
 
+        self.spritesInimigos = []
+        self.spritesItens = []
+
     # Modularizando setters.
     def setAltura(self, altura):
         self.altura = altura
@@ -80,19 +83,17 @@ class mapa:
     # Agora com cores!
     def imprimeMapa(self):
 
-        # Importa os sprites de inimigos e os salva em uma lista.
-        inimigos = []
+        # Importa os sprites de inimigos
         with open("entidades/adversarios.json", "r") as file0 :
             npcData = json.load(file0)
             for npc in npcData:
-                inimigos.append(npc["sprite"])
+                self.spritesInimigos.append(npc["sprite"])
 
-        # Importa os sprites dos itens e os salva em uma lista.
-        itens = []
+        # Importa os sprites dos itens
         with open("entidades/items.json", "r") as file1:
             itmData = json.load(file1)
             for item in itmData :
-                itens.append(item["sprite"])
+                self.spritesItens.append(item["sprite"])
 
         # Contagem de de céulas Caminhos ou Paredes. 
         contParedes = 0
@@ -103,12 +104,18 @@ class mapa:
                 # Verifica jogador primeiro (string "@" ou qualquer comparação)
                 if(estadoAtual == "@"):
                     cprint("@", "yellow", end=" ")
-                # Verifica então item.
-                elif(estadoAtual in item):
+                # Verifica então item (usando sprites do JSON)
+                elif(estadoAtual in self.spritesItens):
                     cprint(estadoAtual, "green", end=" ")
-                # Então inimigos
-                elif(estadoAtual in inimigos):
+                # Então inimigos (usando sprites do JSON)
+                elif(estadoAtual in self.spritesInimigos):
                     cprint(estadoAtual, "red", end=" ")
+                # Verifica portal
+                elif(estadoAtual == '8'):
+                    cprint(estadoAtual, "blue", end=" ")
+                # Verifica caminho marcado
+                elif(estadoAtual == '*'):
+                    cprint(estadoAtual, "cyan", end=" ")
                 # Feito isso, printa Paredes e Caminhos livres.
                 elif(estadoAtual == '0'):
                     cprint(estadoAtual, "white", end=" ")
@@ -127,7 +134,7 @@ class mapa:
         # Também se reinicia a cada chamada como contagem de vizinhos.
         mudancas = 0
 
-        # Contador do tempo de início da atualizção.
+        # Contador do tempo de início da atualização.
         comeco = time.perf_counter()
 
         # 1) Primeiro calcula vizinhos para todas as células sem alterar estados
@@ -219,15 +226,3 @@ class mapa:
         #print(f"Mapa importado do arquivo : {caminhoArquivo}")
 
         return self
-
-        
-# Debuggando novo processo de criação.
-
-mapa = mapa()
-mapa.setAltura(20)
-mapa.setLargura(20)
-
-mapa.geraMapa(10)
-print("Estado inicial : ")
-mapa.imprimeMapa()
-
