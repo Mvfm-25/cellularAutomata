@@ -709,6 +709,9 @@ def populaMasmorraComItens(mapa, quantidadeItems=10):
     itensColocados = 0
     tentativas = 0
     maxTentativas = quantidadeItems * 10  # Evita loop infinito
+
+    # Evitando mapas sem chaves.
+    garanteChave(mapa)
     
     while itensColocados < quantidadeItems and tentativas < maxTentativas:
         tentativas += 1
@@ -719,6 +722,7 @@ def populaMasmorraComItens(mapa, quantidadeItems=10):
         
         # Verifica se é caminho livre, não ocupado por mais nada.
         if mapa.matriz[x][y].estado == '0':
+
             # Escolhe item aleatório, importando de items do JSON
             with open("entidades/items.json", "r") as file:
                 itemData = json.load(file)
@@ -741,6 +745,35 @@ def populaMasmorraComItens(mapa, quantidadeItems=10):
             itensColocados += 1
     
     print(f"Total de itens colocados: {itensColocados}")
+
+# Evitando masmorras sem chaves.
+def garanteChave(mapa):
+    tentativas = 0
+    maxTentativas = 100
+
+    chavesColocadas = 0
+
+    while tentativas < maxTentativas  and chavesColocadas != 1:
+        tentativas += 1
+
+        x = random.randint(0, mapa.altura - 1)
+        y = random.randint(0, mapa.largura -1)
+
+        if mapa.matriz[x][y].estado == '0':
+            chave = item(
+                nome="Chave",
+                sprite="C",
+                valor=25,
+                usavel=True,
+                x = x,
+                y = y
+            )
+
+            mapa.colecionaveis.append(chave)
+            mapa.matriz[x][y].estado = chave.sprite
+            chavesColocadas += 1
+            
+    print("Uma chave foi colocada no mapa!")
 
 # Função para limpar a tela (funciona em Windows e Linux)
 def limpaTela():
