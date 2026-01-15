@@ -1,7 +1,7 @@
 [
-    {"id": 0, "nome": "Poção de Vida", "sprite": "V", "valor": 50, "usavel": true},
-    {"id": 1, "nome": "Moeda de Ouro", "sprite": "M", "valor": 10, "usavel": false},
-    {"id": 2, "nome": "Chave", "sprite": "C", "valor": 25, "usavel": true},
-    {"id": 3, "nome": "Pergaminho", "sprite": "P", "valor": 15, "usavel": true},
-    {"id": 4, "nome": "Ruby", "sprite": "R", "valor": 100, "usavel": false}
+    {"nome": "Poção de Vida", "sprite": "V", "valor": 50, "usavel": true},
+    {"nome": "Moeda de Ouro", "sprite": "M", "valor": 10, "usavel": false},
+    {"nome": "Chave", "sprite": "C", "valor": 25, "usavel": true},
+    {"nome": "Pergaminho", "sprite": "P", "valor": 15, "usavel": true},
+    {"nome": "Ruby", "sprite": "R", "valor": 100, "usavel": false}
 ]

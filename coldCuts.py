@@ -419,27 +419,36 @@ class jogador:
                         try:
                             # Carrega a nova masmorra
                             mapa.leMapaExportado(nova_masmorra)
-                            
-                            # Encontra uma posição inicial válida na nova masmorra
+
+                            # Limpa itens & adversarios antigos
+                            mapa.adversarios = []
+                            mapa.itens = []
+
+                            # Encontra uma posição inicial válida na nova masmorra ANTES de popular
+                            # Isso garante que a posição do jogador não seja ocupada por itens/inimigos
                             if not self.encontraPosicaoInicial(mapa):
                                 print("Erro: Não foi possível encontrar uma posição válida na nova masmorra!")
                                 return False
                             
-                            # Coloca o jogador no mapa
+                            # Coloca o jogador no mapa ANTES de popular itens/inimigos
                             mapa.matriz[self.x][self.y].estado = self.sprite
                             
-                            # Limpa itens & adversarios antigos
-                            mapa.adversarios = []
-                            mapa.itens = []
-                            
-                            # Popula masmorra com novos inimigos
+                            # Popula masmorra com novos inimigos (evitando a posição do jogador)
                             populaMasmorraComInimigos(mapa, quantidadeInimigos=20)
-                            # Popula a nova masmorra com itens
+                            # Popula a nova masmorra com itens (evitando a posição do jogador)
                             populaMasmorraComItens(mapa, quantidade_items=10)
+                            
+                            # Garante que o jogador ainda está no mapa após popular
+                            mapa.matriz[self.x][self.y].estado = self.sprite
                             
                             print(f"Você acordou em uma nova masmorra! ({self.x}, {self.y})")
                             # Ganha XP por explorar masmorra
                             self.checaNivel(75)
+                            
+                            # Atualiza a tela para mostrar a nova masmorra com jogador e itens
+                            desenhaInterface(self, mapa)
+                            input("Pressione ENTER para continuar...")
+                            
                             return True
                             
                         except Exception as e:
@@ -742,7 +751,7 @@ def desenhaInterface(player, mapa):
     print(f"{mapa.titulo}")
     mapa.imprimeMapa()
     print()
-    print("Controles: 7-8-9 (↖↑↗) | 4-6 (←→) | 1-2-3 (↙↓↘) | 'a' Ataca | 'c' Caminho | 'i' Inventário | 'u' Usar item | 'p' Entrar portal | 'q' Sair")
+    print("Controles: 7-8-9 (↖↑↗) | 4-6 (←→) | 1-2-3 (↙↓↘) | 'a+dir' Ataca | 'c' Caminho | 'i' Inventário | 'u' Usar item | 'p' Entrar portal | 'q' Sair")
     print("-" * 50)
 
 # Processa input do jogador.

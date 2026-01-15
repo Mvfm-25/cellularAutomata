@@ -5,7 +5,7 @@
 
 import numpy as np
 import random
-import termcolor as color
+from termcolor import cprint, colored
 import time
 import json
 from datetime import datetime
@@ -14,7 +14,7 @@ from datetime import datetime
 # Toda célula inicia com estado de 'parede' ('1'), '0' representa um caminho livre.
 class celula:
     def __init__(self, x, y):
-        self.estado = random.randint(0, 1)
+        self.estado = str(random.randint(0, 1))
         self.vizinhos = 0
         self.x = x
         self.y = y
@@ -35,7 +35,7 @@ class celula:
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
                 # Ignora a própria célula.
-                if(dx == 0 and dy == 0):
+                if(dx == '0' and dy == '0'):
                     continue
 
                 nx = self.x + dx
@@ -43,7 +43,7 @@ class celula:
 
                 # Verifica se o vizinho está dentro dos limites da matriz.
                 if(0 <= nx < len(matriz) and 0 <= ny < len(matriz[0])):
-                    if(matriz[nx][ny].estado == 1):
+                    if(matriz[nx][ny].estado == '1'):
                         self.vizinhos += 1
 
         #print(f"Célula analisada : ({self.x}, {self.y})")
@@ -80,43 +80,42 @@ class mapa:
     # Agora com cores!
     def imprimeMapa(self):
 
-        # Importa dados de inimigos.
+        # Importa os sprites de inimigos e os salva em uma lista.
+        inimigos = []
         with open("entidades/adversarios.json", "r") as file0 :
             npcData = json.load(file0)
+            for npc in npcData:
+                inimigos.append(npc["sprite"])
 
-        # Importa dados dos itens.
+        # Importa os sprites dos itens e os salva em uma lista.
+        itens = []
         with open("entidades/items.json", "r") as file1:
             itmData = json.load(file1)
+            for item in itmData :
+                itens.append(item["sprite"])
 
         # Contagem de de céulas Caminhos ou Paredes. 
         contParedes = 0
         contCaminhos = 0
         for i in range(self.altura) :
             for j in range(self.largura) :
-                if(self.matriz[i][j].estado == 1):
-                    color.cprint("1", "magenta", end=" ")
-                    contParedes += 1
-                elif(self.matriz[i][j].estado == "@"):
-                    color.cprint("@", "yellow", end=" ")
-                elif(self.matriz[i][j].estado == 0):
-                    color.cprint("0", "white", end=" ")
+                estadoAtual = self.matriz[i][j].estado
+                # Verifica jogador primeiro (string "@" ou qualquer comparação)
+                if(estadoAtual == "@"):
+                    cprint("@", "yellow", end=" ")
+                # Verifica então item.
+                elif(estadoAtual in item):
+                    cprint(estadoAtual, "green", end=" ")
+                # Então inimigos
+                elif(estadoAtual in inimigos):
+                    cprint(estadoAtual, "red", end=" ")
+                # Feito isso, printa Paredes e Caminhos livres.
+                elif(estadoAtual == '0'):
+                    cprint(estadoAtual, "white", end=" ")
                     contCaminhos += 1
-                elif(self.matriz[i][j].estado == "C"):
-                    # Caminho para o portal (ciano)
-                    color.cprint("*", "light_blue", end=" ")
-                elif(self.matriz[i][j].estado == "8"):
-                    # Sprite da PORTA SECRETA.
-                    color.cprint("8", "light_blue", end=" ")
-                elif(isinstance(self.matriz[i][j].estado, int) and self.matriz[i][j].estado >= 100 and self.matriz[i][j].estado < 200):
-                    # Renderiza inimigos (índices 100-199)
-                    npcIndex = self.matriz[i][j].estado - 100
-                    if npcIndex < len(npcData):
-                        color.cprint(npcData[npcIndex]["sprite"], "red", end=" ")
-                elif(isinstance(self.matriz[i][j].estado, int) and self.matriz[i][j].estado >= 200 and self.matriz[i][j].estado < 300):
-                    # Renderiza itens (índices 200-299)
-                    itmIndex = self.matriz[i][j].estado - 200
-                    if itmIndex < len(itmData):
-                        color.cprint(itmData[itmIndex]["sprite"], "green", end=" ")
+                else :
+                    cprint(estadoAtual, "magenta", end=" ")
+                    contParedes += 1
             print()
         print(f"Número de Paredes : {contParedes} | Número de Caminhos : {contCaminhos}")
         print()
@@ -141,8 +140,8 @@ class mapa:
             for j in range(self.largura):
                 if(self.matriz[i][j].vizinhos > 4):
                     # Só conta se realmente muda.
-                    if(self.matriz[i][j].estado == 1):  
-                        self.matriz[i][j].atualizaEstado(0)
+                    if(self.matriz[i][j].estado == '1'):  
+                        self.matriz[i][j].atualizaEstado('0')
                         mudancas += 1
                     if(self.mutaCelula(self.matriz[i][j])):
                         mudancas += 1
@@ -158,7 +157,7 @@ class mapa:
         # 25% de chance de mudar o estado.
         # Equivalente de jogar um D100, 1/4 de chance.
         if(dado >= 75):
-            celula.atualizaEstado(1) if celula.estado == 0 else celula.atualizaEstado(0)
+            celula.atualizaEstado('1') if celula.estado == '0' else celula.atualizaEstado('0')
             print(f"Mutação aleatória ocorrida na célula ({celula.x}, {celula.y})!")
             return True
         else :
@@ -216,26 +215,19 @@ class mapa:
             for i in range(self.altura):
                 valores = linhas[i].strip().split()
                 for j in range(self.largura):
-                    self.matriz[i][j].estado = int(valores[j])
+                    self.matriz[i][j].estado = valores[j]
         #print(f"Mapa importado do arquivo : {caminhoArquivo}")
 
         return self
 
         
+# Debuggando novo processo de criação.
 
-#mapa = mapa(20, 20)
-#apa.geraMapa()
-#print("Estado inicial : ")
-#mapa.imprimeMapa()
+mapa = mapa()
+mapa.setAltura(20)
+mapa.setLargura(20)
 
-#comecoSim = time.perf_counter()
-#for i in range(10):
-#    print(f"Geração : {i}")
-#    mapa.atualizaCelulas()
-#    mapa.imprimeMapa()
+mapa.geraMapa(10)
+print("Estado inicial : ")
+mapa.imprimeMapa()
 
-#fimSim = time.perf_counter()
-#print(f"Simulação finalizada em : {fimSim - comecoSim:.4f} segundos")
-
-# Ecrevendo mapa final em arquivo.
-#mapa.exportaEstadoFinal()
