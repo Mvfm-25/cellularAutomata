@@ -83,6 +83,10 @@ class mapa:
     # Agora com cores!
     def imprimeMapa(self):
 
+        # Limpa estado anterior, ajuda com a entrada em portais.
+        self.spritesInimigos = []
+        self.spritesItens = []
+
         # Importa os sprites de inimigos
         with open("entidades/adversarios.json", "r") as file0 :
             npcData = json.load(file0)

@@ -423,27 +423,10 @@ class jogador:
                         try:
                             # Carrega a nova masmorra
                             mapa.leMapaExportado(novaMasmorra)
-
-                            # Limpa itens & adversarios antigos
-                            mapa.adversarios = []
-                            mapa.colecionaveis = []
-
-                            # Encontra uma posição inicial válida na nova masmorra ANTES de popular
-                            # Isso garante que a posição do jogador não seja ocupada por itens/inimigos
-                            if not self.encontraPosicaoInicial(mapa):
-                                print("Erro: Não foi possível encontrar uma posição válida na nova masmorra!")
+                            
+                            # Inicializa a masmorra para o jogo
+                            if not inicializaMasmorraParaJogo(mapa, self, quantidadeInimigos=20, quantidadeItems=10):
                                 return False
-                            
-                            # Coloca o jogador no mapa ANTES de popular itens/inimigos
-                            mapa.matriz[self.x][self.y].estado = self.sprite
-                            
-                            # Popula masmorra com novos inimigos (evitando a posição do jogador)
-                            populaMasmorraComInimigos(mapa, quantidadeInimigos=20)
-                            # Popula a nova masmorra com itens (evitando a posição do jogador)
-                            populaMasmorraComItens(mapa, quantidade_items=10)
-                            
-                            # Garante que o jogador ainda está no mapa após popular
-                            mapa.matriz[self.x][self.y].estado = self.sprite
                             
                             print(f"Você acordou em uma nova masmorra! ({self.x}, {self.y})")
                             # Ganha XP por explorar masmorra
@@ -670,7 +653,7 @@ def pintaCaminhoPortal(mapa, player):
 
 # Popula masmorra com inimigos. 
 # Quase idêntico ao de itens.
-def populaMasmorraComInimigos(mapa, quantidadeInimigos=20):
+def populaMasmorraComInimigos(mapa, quantidadeInimigos=20, posicaoJogadorX=None, posicaoJogadorY=None):
     adversarios = 0
     tentativas = 0
     maxTentativas = quantidadeInimigos * 10
@@ -681,7 +664,8 @@ def populaMasmorraComInimigos(mapa, quantidadeInimigos=20):
         x = random.randint(0, mapa.altura - 1)
         y = random.randint(0, mapa.largura - 1)
 
-        if mapa.matriz[x][y].estado == '0':
+        # Verifica se é caminho livre E não é posição do jogador
+        if mapa.matriz[x][y].estado == '0' and not (x == posicaoJogadorX and y == posicaoJogadorY):
             with open("entidades/adversarios.json", "r") as file :
                 advData = json.load(file)
 
@@ -705,7 +689,7 @@ def populaMasmorraComInimigos(mapa, quantidadeInimigos=20):
 
 
 # Função para popular a masmorra com itens
-def populaMasmorraComItens(mapa, quantidadeItems=10):
+def populaMasmorraComItens(mapa, quantidadeItems=10, posicaoJogadorX=None, posicaoJogadorY=None):
     itensColocados = 0
     tentativas = 0
     maxTentativas = quantidadeItems * 10  # Evita loop infinito
@@ -720,8 +704,8 @@ def populaMasmorraComItens(mapa, quantidadeItems=10):
         x = random.randint(0, mapa.altura - 1)
         y = random.randint(0, mapa.largura - 1)
         
-        # Verifica se é caminho livre, não ocupado por mais nada.
-        if mapa.matriz[x][y].estado == '0':
+        # Verifica se é caminho livre, não ocupado por mais nada, E não é posição do jogador
+        if mapa.matriz[x][y].estado == '0' and not (x == posicaoJogadorX and y == posicaoJogadorY):
 
             # Escolhe item aleatório, importando de items do JSON
             with open("entidades/items.json", "r") as file:
@@ -774,6 +758,49 @@ def garanteChave(mapa):
             chavesColocadas += 1
             
     print("Uma chave foi colocada no mapa!")
+
+# Função auxiliar para inicializar uma masmorra após carregá-la
+def inicializaMasmorraParaJogo(mapa, player, quantidadeInimigos=20, quantidadeItems=10):
+    """
+    Inicializa uma masmorra após carregá-la:
+    1. Limpa estados antigos (mantendo apenas '0' e '1')
+    2. Encontra posição inicial válida para o jogador
+    3. Posiciona o jogador no mapa
+    4. Popula com inimigos e itens, evitando a posição do jogador
+    
+    Retorna True se bem-sucedido, False caso contrário
+    """
+    # Limpa estados do mapa (mantendo apenas '0' parede e '1' caminho)
+    for i in range(mapa.altura):
+        for j in range(mapa.largura):
+            estado = mapa.matriz[i][j].estado
+            if estado not in ['0', '1']:
+                mapa.matriz[i][j].estado = '0'
+
+    # Limpa inimigos e itens antigos
+    mapa.adversarios = []
+    mapa.colecionaveis = []
+
+    # Encontra posição inicial válida
+    if not player.encontraPosicaoInicial(mapa):
+        print("Erro: Não foi possível encontrar uma posição válida na masmorra!")
+        return False
+    
+    # Posiciona o jogador no mapa
+    mapa.matriz[player.x][player.y].estado = player.sprite
+    
+    # Popula com inimigos (passando posição do jogador para evitar sobreposição)
+    populaMasmorraComInimigos(mapa, quantidadeInimigos=quantidadeInimigos, 
+                             posicaoJogadorX=player.x, posicaoJogadorY=player.y)
+    
+    # Popula com itens (passando posição do jogador para evitar sobreposição)
+    populaMasmorraComItens(mapa, quantidadeItems=quantidadeItems, 
+                          posicaoJogadorX=player.x, posicaoJogadorY=player.y)
+    
+    # Garante que o jogador ainda está visível no mapa após popular
+    mapa.matriz[player.x][player.y].estado = player.sprite
+    
+    return True
 
 # Função para limpar a tela (funciona em Windows e Linux)
 def limpaTela():
@@ -856,25 +883,11 @@ def main():
         case "2":
             caminhoArquivo = input("Determine a masmorra a ser carregada (ex: 'masmorras/masmorra0.txt'):\n")
             mapa.leMapaExportado(caminhoArquivo)
-            player.encontraPosicaoInicial(mapa)
     
-    # Encontra posição inicial
-    if not player.encontraPosicaoInicial(mapa):
-        print("Erro: Não foi possível encontrar uma posição inicial válida!")
+    # Inicializa a masmorra para o jogo
+    if not inicializaMasmorraParaJogo(mapa, player, quantidadeInimigos=20, quantidadeItems=10):
+        print("Erro: Falha ao inicializar a masmorra!")
         return
-    
-    # Coloca o jogador no mapa
-    mapa.matriz[player.x][player.y].estado = player.sprite
-   
-    # Inicializa lista de inimigos no mapa
-    mapa.adversarios = []
-    # Inicializa lista de itens no mapa
-    mapa.colecionaveis = []
-    
-    # Popula masmorra com inimigos
-    populaMasmorraComInimigos(mapa, quantidadeInimigos=20)
-    # Popula masmorra com itens
-    populaMasmorraComItens(mapa, quantidadeItems=10)
     
     # Loop principal do jogo
     jogando = True
