@@ -1,7 +1,7 @@
 [
-    {"nome": "Poção de Vida", "sprite": "V", "valor": 50, "usavel": true},
-    {"nome": "Moeda de Ouro", "sprite": "M", "valor": 10, "usavel": false},
-    {"nome": "Chave", "sprite": "C", "valor": 25, "usavel": true},
-    {"nome": "Pergaminho", "sprite": "P", "valor": 15, "usavel": true},
-    {"nome": "Ruby", "sprite": "R", "valor": 100, "usavel": false}
+    {"nome": "Poção de Vida", "sprite": "V", "valor": 50, "usavel": true, "glossario" : "Uma poção abençoada que recupera a vida de seu usuário."},
+    {"nome": "Moeda de Ouro", "sprite": "M", "valor": 10, "usavel": false, "glossario" : "A divisa de um reino de gerações passadas... O rosto de seu último emperador seu único resquício."},
+    {"nome": "Chave", "sprite": "C", "valor": 25, "usavel": true, "glossario" : "Poucos conhecem deste item, outros iriam preferir não o conhecer..."},
+    {"nome": "Pergaminho", "sprite": "P", "valor": 15, "usavel": true, "glossario" : "Conhecimento de monges de inúmeros monastérios são colecionadaos neste códice."},
+    {"nome": "Ruby", "sprite": "R", "valor": 100, "usavel": false, "glossario" : "Uma gema de brilho excepcional, por mais que esteja cercada por escuridão."}
 ]

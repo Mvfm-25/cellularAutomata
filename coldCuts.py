@@ -21,12 +21,14 @@ class GerenciadorMusica:
         pygame.mixer.init()
         self.tocando = False
         self.thread = None
+        self.efeitosAtivos = []  # Lista para manter referência dos sons em toque
 
     def tocaEfeito(self, caminhoSom):
         """ Toca efeito sonoro sem bloquear o game loop """
         try:
             som = pygame.mixer.Sound(caminhoSom)
             som.play()
+            self.efeitosAtivos.append(som)  # Mantém referência para não ser coletado
             print(f"Efeito sonoro tocado: {caminhoSom}")
         except Exception as e:
             print(f"Erro ao tocar efeito sonoro: {e}")
@@ -68,13 +70,15 @@ gMusica.tocaMusica("musica/coldCuts - dungeon1.ogg", loops=-1)
 # Classe de itens que podem ser encontrados no mapa.
 class item:
 
-    def __init__(self, nome, sprite, valor, usavel, x, y):
+    def __init__(self, nome, sprite, valor, usavel, glossario, x, y):
         self.nome = nome
         self.sprite = sprite
         # Para itens como moedas etc.
         self.valor = valor
         # Verifica se jogador consegue usar item (poções, chaves, pergaminhos.)
         self.usavel = usavel
+        # O que o jogador vai conseguir pesquisar em seu dicionário.
+        self.glossario = glossario
         self.x = x
         self.y = y
 
@@ -151,15 +155,18 @@ class jogador:
         self.xp = 0
         self.xpParaProximoNivel = 0
 
+        # Stats de personagem
         self.hp = 0
         self.hpMaximo = 0
         self.ataque = 0
         self.armadura = 0
         self.acuracia = 0
 
-        # Começando a testar a coleta de itens
+        # Misc.
         self.inventario = []
         self.ultimoItemInserido = 0
+        self.dicionario = []
+
         self.criaPersonagem()
 
     # Função para criar personagem. Nada muito complicado ainda.
@@ -295,6 +302,7 @@ class jogador:
             # Verifica se o inimigo morreu
             if inimigoAlvo.hp <= 0:
                 print(f"\n*** Você derrotou o {inimigoAlvo.nome}! ***\n")
+                
                 mapa.adversarios.remove(inimigoAlvo)
                 mapa.matriz[alvoX][alvoY].estado = '0'
                 # Ganha um pouco de XP pela vitória
@@ -396,6 +404,8 @@ class jogador:
     def adicionaItemInventario(self, item):
         self.inventario.append([self.ultimoItemInserido, item])
         self.ultimoItemInserido += 1
+        # Palavra agora é conhecida!
+        self.dicionario.append([item.nome, item.glossario])
         print(f"Item '{item.nome}' adicionado ao inventário!")
         input("Pressione ENTER para continuar...")
 
@@ -536,6 +546,9 @@ class jogador:
         
     # And died and went to hell. Good game!
     def lidaMorte(self, adversario):
+        gMusica.paraMusica()
+        time.sleep(0.5)  # Aguarda música parar
+        gMusica.tocaMusica("musica/coldCuts - dungeon2 (pedra sagrada).ogg", loops=-1)
         limpaTela()
 
         print(f"Você morreu! Sua aventura termina aqui, {self.nome}...")
@@ -545,6 +558,7 @@ class jogador:
         print(f"Você passou {self.lvl} meses nas cavernas... Acumulou {self.xp} de conhecimento.\n")
         print("-" * 50)
         input("\nPressione ENTER para deixar esse mundo..")
+        time.sleep(1)  # Aguarda um pouco antes de sair (garante que a música toca)
         sys.exit(0) 
 
     def olhar(self, mapa, direcao):
@@ -572,8 +586,28 @@ class jogador:
                 print("Direção inválida!")
                 return
             
-        print(f"Você enxerga um(a) : {mapa.matriz[olhoY][olhoX].nome}...")
+         # Verificar de novo se não estou me confundindo x com y.   
+        print(f"Você enxerga um(a) : {mapa.matriz[olhoX][olhoY].nome}...")
         input("Pressione ENTER para continuar")
+
+    # Jogador pesquisa aqui por palavras chave sobre itens e inimigos que enctrou em sua jornada.
+    def abreDicionario(self):
+        print("Você alcança por suas anotações...\n")
+        pesquisa = input("Digite a palavra que procuras : ")
+        print(f"Procurando por '{pesquisa}' em suas anotações...\n")
+
+        for entrada in self.dicionario:
+            # Achou a palavra, retorna sua entrada no glossário.
+            # Busca por substring, pois não acredito que o jogador vai sempre lembrar do nome correto e completo.
+            if pesquisa.lower() in entrada[0].lower():
+                print(f"{entrada[0]} --- {entrada[1]}\n")
+                input("Pressione ENTER para continuar...")
+                return
+            
+        # Palavra ainda não conhecida, personagem precisa aprender mais!
+        print(f"Palavra {pesquisa} não está em seu vocabulário...\n")
+        input("Pressione ENTER para continuar...")
+        return
     
 # Popula a masmorra com um caminho secreto
 def criaPortal(mapa):
@@ -725,8 +759,9 @@ def populaMasmorraComInimigos(mapa, quantidadeInimigos=20, posicaoJogadorX=None,
             )
 
             mapa.adversarios.append(novoAdv)
-            # Armazena o índice do inimigo (100 + id)
             mapa.matriz[x][y].estado = novoAdv.sprite
+            # Tentando fazer 'olhar' funcionar
+            mapa.matriz[x][y].nome == novoAdv.nome
             adversarios += 1
 
     print(f"Total de inimigos inseridos : {adversarios}")
@@ -762,14 +797,16 @@ def populaMasmorraComItens(mapa, quantidadeItems=10, posicaoJogadorX=None, posic
                 sprite=itemEscolhido['sprite'],
                 valor=itemEscolhido['valor'],
                 usavel=itemEscolhido['usavel'],
+                glossario=itemEscolhido['glossario'],
                 x=x,
                 y=y
             )
             
             # Adiciona à lista de itens do mapa e atualiza matriz
             mapa.colecionaveis.append(novoItem)
-            # Armazena o índice do item (200 + id)
             mapa.matriz[x][y].estado = novoItem.sprite
+            # Tentando fazer 'olhar' funcionar
+            mapa.matriz[x][y].nome == novoItem.nome
             itensColocados += 1
     
     print(f"Total de itens colocados: {itensColocados}")
@@ -793,6 +830,8 @@ def garanteChave(mapa):
                 sprite="C",
                 valor=25,
                 usavel=True,
+                # Hehehehe spooky key. Just like tf2....
+                glossario="Poucos conhecem deste item, outros iriam preferir não o conhecer...",
                 x = x,
                 y = y
             )
@@ -900,6 +939,8 @@ def processaComando(comando, player, mapa, jogando):
             print("Você se suicidou! What a rotten way to die...")
             input("Pressione ENTER para continuar...")
             player.lidaMorte(player)
+        elif comando.lower() == 'g':
+            player.abreDicionario()
         else:
             print("Comando inválido!")
             input("Pressione ENTER para continuar...")
