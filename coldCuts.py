@@ -2,7 +2,7 @@
 # Aproveitar do que já foi construido em 'cellularAutomata.py' pra fazer um rogue-like.
 # [mvfm]
 #
-# Criado : 12/01/2026  ||  Última modificação : 15/01/2026
+# Criado : 12/01/2026  ||  Última modificação : 16/01/2026
 
 from cellularAutomata import mapa as mapaCA
 import cellularAutomata as ca
@@ -14,6 +14,56 @@ import random
 import json
 import threading
 import sys
+
+# Classe para gerenciar a música de fundo
+class GerenciadorMusica:
+    def __init__(self):
+        pygame.mixer.init()
+        self.tocando = False
+        self.thread = None
+
+    def tocaEfeito(self, caminhoSom):
+        """ Toca efeito sonoro sem bloquear o game loop """
+        try:
+            som = pygame.mixer.Sound(caminhoSom)
+            som.play()
+            print(f"Efeito sonoro tocado: {caminhoSom}")
+        except Exception as e:
+            print(f"Erro ao tocar efeito sonoro: {e}")
+    
+    def tocaMusica(self, caminhoMusica, loops=-1):
+        """Toca música em uma thread separada, não bloqueando o game loop"""
+        if self.tocando:
+            self.paraMusica()
+        
+        self.tocando = True
+        self.thread = threading.Thread(target=self._tocaEmBackground, args=(caminhoMusica, loops))
+        self.thread.daemon = True  # Thread daemon encerra com o programa
+        self.thread.start()
+    
+    def _tocaEmBackground(self, caminhoMusica, loops):
+        """Função interna que roda na thread separada"""
+        try:
+            pygame.mixer.music.load(caminhoMusica)
+            pygame.mixer.music.play(loops)
+            
+            # Aguarda enquanto música toca
+            while pygame.mixer.music.get_busy() and self.tocando:
+                time.sleep(0.1)
+        except Exception as e:
+            print(f"Erro ao tocar música: {e}")
+        finally:
+            self.tocando = False
+    
+    def paraMusica(self):
+        """Para a música"""
+        self.tocando = False
+        pygame.mixer.music.stop()
+
+# Cria instância do gerenciador de música
+# Colocando desse jeito por conveniência?
+gMusica = GerenciadorMusica()
+gMusica.tocaMusica("musica/coldCuts - dungeon1.ogg", loops=-1)
 
 # Classe de itens que podem ser encontrados no mapa.
 class item:
@@ -78,6 +128,7 @@ class adversario :
                 
                 # Verifica se o jogador morreu
                 if jogador.hp <= 0:
+                    gMusica.tocaEfeito("musica/wilhelm")
                     jogador.lidaMorte(self)
             else:
                 print("Sua armadura resistiu completamente ao ataque!")
@@ -346,6 +397,7 @@ class jogador:
         self.inventario.append([self.ultimoItemInserido, item])
         self.ultimoItemInserido += 1
         print(f"Item '{item.nome}' adicionado ao inventário!")
+        input("Pressione ENTER para continuar...")
 
     def usaItem(self, id, mapa=None):
         for i in range(len(self.inventario)):
@@ -492,44 +544,36 @@ class jogador:
         print("-" * 50)
         print(f"Você passou {self.lvl} meses nas cavernas... Acumulou {self.xp} de conhecimento.\n")
         print("-" * 50)
-        sys.exit(0)
-    
-# Classe para gerenciar a música de fundo
-class GerenciadorMusica:
-    def __init__(self):
-        pygame.mixer.init()
-        self.tocando = False
-        self.thread = None
-    
-    def tocaMusica(self, caminhoMusica, loops=-1):
-        """Toca música em uma thread separada, não bloqueando o game loop"""
-        if self.tocando:
-            self.paraMusica()
+        input("\nPressione ENTER para deixar esse mundo..")
+        sys.exit(0) 
+
+    def olhar(self, mapa, direcao):
+        olhoX = 0
+        olhoY = 0
         
-        self.tocando = True
-        self.thread = threading.Thread(target=self._tocaEmBackground, args=(caminhoMusica, loops))
-        self.thread.daemon = True  # Thread daemon encerra com o programa
-        self.thread.start()
-    
-    def _tocaEmBackground(self, caminhoMusica, loops):
-        """Função interna que roda na thread separada"""
-        try:
-            pygame.mixer.music.load(caminhoMusica)
-            pygame.mixer.music.play(loops)
+        match direcao:
+            case "7":  # Canto superior esquerdo
+                 olhoX, olhoY = self.x - 1, self.y - 1
+            case "8":  # Cima
+                 olhoX, olhoY = self.x, self.y - 1
+            case "9":  # Canto superior direito
+                 olhoX, olhoY = self.x + 1, self.y - 1
+            case "4":  # Esquerda
+                 olhoX, olhoY = self.x - 1, self.y
+            case "6":  # Direita
+                 olhoX, olhoY = self.x + 1, self.y
+            case "1":  # Canto inferior esquerdo
+                 olhoX, olhoY = self.x - 1, self.y + 1
+            case "2":  # Baixo
+                 olhoX, olhoY = self.x, self.y + 1
+            case "3":  # Canto inferior direito
+                 olhoX, olhoY = self.x + 1, self.y + 1
+            case _:
+                print("Direção inválida!")
+                return
             
-            # Aguarda enquanto música toca
-            while pygame.mixer.music.get_busy() and self.tocando:
-                time.sleep(0.1)
-        except Exception as e:
-            print(f"Erro ao tocar música: {e}")
-        finally:
-            self.tocando = False
-    
-    def paraMusica(self):
-        """Para a música"""
-        self.tocando = False
-        pygame.mixer.music.stop()
-        
+        print(f"Você enxerga um(a) : {mapa.matriz[olhoY][olhoX].nome}...")
+        input("Pressione ENTER para continuar")
     
 # Popula a masmorra com um caminho secreto
 def criaPortal(mapa):
@@ -834,6 +878,8 @@ def processaComando(comando, player, mapa, jogando):
             print("Atacando!")
             player.ataca(mapa, comando[1])
             input("Pressione ENTER para continuar...")
+        elif 'o' in comando.lower():
+            player.olhar(mapa, comando[1])
         elif comando.lower() == 'u':
             print("Pressione o 'id' do item que deseja usar:")
             player.checaInventario()
@@ -850,6 +896,10 @@ def processaComando(comando, player, mapa, jogando):
             jogando = False
         elif comando in ['1', '2', '3', '4', '6', '7', '8', '9']:
             player.movimenta(mapa, comando)
+        elif comando.lower() == 'k':
+            print("Você se suicidou! What a rotten way to die...")
+            input("Pressione ENTER para continuar...")
+            player.lidaMorte(player)
         else:
             print("Comando inválido!")
             input("Pressione ENTER para continuar...")
@@ -858,10 +908,6 @@ def processaComando(comando, player, mapa, jogando):
 
 # GAME LOOP PRINCIPAL
 def main():
-
-    # Cria instância do gerenciador de música
-    musica = GerenciadorMusica()
-    musica.tocaMusica("musica/coldCuts - dungeon1.ogg", loops=-1)
 
     # Cria instância do mapa.
     mapa = mapaCA()

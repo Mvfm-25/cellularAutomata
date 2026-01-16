@@ -19,6 +19,12 @@ class celula:
         self.x = x
         self.y = y
 
+        # Bugiganga, por tanto temporário.
+        if self.estado == "1":
+            self.nome = "Parede"
+        else : 
+            self.nome = "Caminho livre"
+
     # Atualiza o estado da célula.
     def atualizaEstado(self, novoEstado):
         print(f"Célula atualizada : ({self.x}, {self.y})")
@@ -91,13 +97,13 @@ class mapa:
         with open("entidades/adversarios.json", "r") as file0 :
             npcData = json.load(file0)
             for npc in npcData:
-                self.spritesInimigos.append(npc["sprite"])
+                self.spritesInimigos.append([npc["sprite"], npc["nome"]])
 
         # Importa os sprites dos itens
         with open("entidades/items.json", "r") as file1:
             itmData = json.load(file1)
             for item in itmData :
-                self.spritesItens.append(item["sprite"])
+                self.spritesItens.append([item["sprite"], item["nome"]])
 
         # Contagem de de céulas Caminhos ou Paredes. 
         contParedes = 0
@@ -109,16 +115,27 @@ class mapa:
                 if(estadoAtual == "@"):
                     cprint("@", "yellow", end=" ")
                 # Verifica então item (usando sprites do JSON)
-                elif(estadoAtual in self.spritesItens):
+                # Agora com teste de nome, pra ficar legal o uso de 'olhar()'.
+                elif any(item[0] == estadoAtual for item in self.spritesItens):
+                    for item in self.spritesItens:
+                        if item[0] == estadoAtual:
+                            self.matriz[i][j].nome = item[1]
+                            break
                     cprint(estadoAtual, "green", end=" ")
                 # Então inimigos (usando sprites do JSON)
-                elif(estadoAtual in self.spritesInimigos):
+                elif any(npc[0] == estadoAtual for npc in self.spritesInimigos):
+                    for npc in self.spritesInimigos:
+                        if npc[0] == estadoAtual:
+                            self.matriz[i][j].nome = npc[1]
+                            break
                     cprint(estadoAtual, "red", end=" ")
                 # Verifica portal
                 elif(estadoAtual == '8'):
+                    self.matriz[i][j].nome = "Portal"
                     cprint(estadoAtual, "blue", end=" ")
                 # Verifica caminho marcado
                 elif(estadoAtual == '*'):
+                    self.matriz[i][j].nome = "Caminho... Especial?"
                     cprint(estadoAtual, "cyan", end=" ")
                 # Feito isso, printa Paredes e Caminhos livres.
                 elif(estadoAtual == '0'):

@@ -1,0 +1,5 @@
+[
+    {"nome" : "James", "sprite" : "O", "hp" : 50, "ataque" : "10", "armadura" : 2, "Mercadoria" : "Armas"},
+    {"nome" : "Peter", "sprite" : "O", "hp" : 50,"ataque" : "10", "armadura" : 2, "Mercadoria" : "Armadura"},
+    {"nome" : "Ben", "sprite" : "O", "hp" : 50, "ataque" : "10", "armadura" : 2, "Mercadoria" : "Poções"}
+]
