@@ -31,6 +31,20 @@ class celula:
         print(f"Atualizando estado de {self.estado} para {novoEstado}")
         self.estado = novoEstado
 
+        # Atualizando também status do nome de célula.
+        # Vai ajudar com o uso da função 'olhar()' para jogador.
+        # Bem força bruta, com certeza tem maneira melhor mas fds.
+        if(self.estado == '1'):
+            self.nome = "Parede"
+        elif(self.estado == '0'):
+            self.nome = "Caminho livre"
+        elif(self.estado == '8'):
+            self.nome = "Portal"
+        elif(self.estado == '*'):
+            self.nome = "¿Caminho especial?"
+        elif(self.estado == '@'):
+            self.nome = "Jogador"
+
     # Determina o número de vizinhos imediatos paredes.
     # Vai ajudar depois para geração.
     def calculaVizinhos(self, matriz):
@@ -243,7 +257,8 @@ class mapa:
             for i in range(self.altura):
                 valores = linhas[i].strip().split()
                 for j in range(self.largura):
-                    self.matriz[i][j].estado = valores[j]
+                    # Corrigindo pra uso do 'olhar()'
+                    self.matriz[i][j].atualizaEstado(valores[j])
         #print(f"Mapa importado do arquivo : {caminhoArquivo}")
 
         return self

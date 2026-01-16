@@ -304,7 +304,9 @@ class jogador:
                 print(f"\n*** Você derrotou o {inimigoAlvo.nome}! ***\n")
                 
                 mapa.adversarios.remove(inimigoAlvo)
+                # Atualiza estado e nome corretamente
                 mapa.matriz[alvoX][alvoY].estado = '0'
+                mapa.matriz[alvoX][alvoY].nome = "Caminho livre"
                 # Ganha um pouco de XP pela vitória
                 self.checaNivel(50)
             
@@ -562,34 +564,44 @@ class jogador:
         sys.exit(0) 
 
     def olhar(self, mapa, direcao):
-        olhoX = 0
-        olhoY = 0
+        # Mudanças de direção (dx, dy)
+        dx, dy = 0, 0
         
         match direcao:
             case "7":  # Canto superior esquerdo
-                 olhoX, olhoY = self.x - 1, self.y - 1
+                dx, dy = -1, -1
             case "8":  # Cima
-                 olhoX, olhoY = self.x, self.y - 1
+                dx, dy = -1, 0
             case "9":  # Canto superior direito
-                 olhoX, olhoY = self.x + 1, self.y - 1
+                dx, dy = -1, 1
             case "4":  # Esquerda
-                 olhoX, olhoY = self.x - 1, self.y
+                dx, dy = 0, -1
             case "6":  # Direita
-                 olhoX, olhoY = self.x + 1, self.y
+                dx, dy = 0, 1
             case "1":  # Canto inferior esquerdo
-                 olhoX, olhoY = self.x - 1, self.y + 1
+                dx, dy = 1, -1
             case "2":  # Baixo
-                 olhoX, olhoY = self.x, self.y + 1
+                dx, dy = 1, 0
             case "3":  # Canto inferior direito
-                 olhoX, olhoY = self.x + 1, self.y + 1
+                dx, dy = 1, 1
             case _:
                 print("Direção inválida!")
                 return
-            
-         # Verificar de novo se não estou me confundindo x com y.   
-        print(f"Você enxerga um(a) : {mapa.matriz[olhoX][olhoY].nome}...")
+        
+        # Calcula a posição alvo
+        olhoX = self.x + dx
+        olhoY = self.y + dy
+        
+        # Verifica se está dentro dos limites do mapa
+        if not (0 <= olhoX < mapa.altura and 0 <= olhoY < mapa.largura):
+            print("Você olha além dos limites do mapa...")
+            input("Pressione ENTER para continuar")
+            return
+        
+        # Acessa corretamente: matriz[x][y]
+        print(f"Você enxerga um(a): {mapa.matriz[olhoX][olhoY].nome}...")
         input("Pressione ENTER para continuar")
-
+        
     # Jogador pesquisa aqui por palavras chave sobre itens e inimigos que enctrou em sua jornada.
     def abreDicionario(self):
         print("Você alcança por suas anotações...\n")
