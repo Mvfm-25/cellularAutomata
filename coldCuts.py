@@ -744,7 +744,7 @@ def populaMasmorraComInimigos(mapa, quantidadeInimigos=20, posicaoJogadorX=None,
 
         # Verifica se é caminho livre E não é posição do jogador
         if mapa.matriz[x][y].estado == '0' and not (x == posicaoJogadorX and y == posicaoJogadorY):
-            with open("entidades/adversarios.json", "r") as file :
+            with open("entidades/adversarios.json", "r", encoding='utf-8') as file :
                 advData = json.load(file)
 
             advEscolhido = random.choice(advData)
@@ -787,7 +787,7 @@ def populaMasmorraComItens(mapa, quantidadeItems=10, posicaoJogadorX=None, posic
         if mapa.matriz[x][y].estado == '0' and not (x == posicaoJogadorX and y == posicaoJogadorY):
 
             # Escolhe item aleatório, importando de items do JSON
-            with open("entidades/items.json", "r") as file:
+            with open("entidades/items.json", "r", encoding='utf-8') as file:
                 itemData = json.load(file)
 
             itemEscolhido = random.choice(itemData)
