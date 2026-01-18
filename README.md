@@ -2,7 +2,10 @@
 Brincando com os princípios de cellular automata em python pra 'geração de cavernas' & um joguinho.
 
 ## Começando a jogar.
-Para jogar o jogo em seu estado atual basta clonar o último commit do repositório
+Para jogar o jogo em seu estado mais estável atualmente, basta baixar seu último release!
+
+Caso desejas manter-se a frente da curva jogando a versão mais recente, simplesmente clone o repoistório com o seguinte comando :
+
 ```
 git clone https://github.com/Mvfm-25/cellularAutomata.git
 ```
